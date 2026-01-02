@@ -24,8 +24,8 @@ class SettingsSupabaseDataSource @Inject constructor(
         return try {
             supabaseClient.from(tableNames.settings)
                 .select(columns = Columns.ALL)
-                .limit(1)
-                .decodeSingleOrNull<SettingsEntity>()
+                .decodeList<SettingsEntity>()
+                .firstOrNull()
         } catch (e: Exception) {
             null
         }
