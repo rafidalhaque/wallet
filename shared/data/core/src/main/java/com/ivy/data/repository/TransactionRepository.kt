@@ -2,8 +2,6 @@ package com.ivy.data.repository
 
 import com.ivy.base.model.TransactionType
 import com.ivy.base.threading.DispatchersProvider
-import com.ivy.data.db.dao.read.TransactionDao
-import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.CategoryId
@@ -17,6 +15,7 @@ import com.ivy.data.model.primitive.AssociationId
 import com.ivy.data.model.primitive.NonNegativeLong
 import com.ivy.data.model.primitive.toNonNegative
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.data.supabase.datasource.TransactionSupabaseDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -25,15 +24,14 @@ import javax.inject.Inject
 
 class TransactionRepository @Inject constructor(
     private val mapper: TransactionMapper,
-    private val transactionDao: TransactionDao,
-    private val writeTransactionDao: WriteTransactionDao,
+    private val transactionDataSource: TransactionSupabaseDataSource,
     private val dispatchersProvider: DispatchersProvider,
     private val tagRepository: TagRepository
 ) {
     suspend fun findAll(): List<Transaction> = withContext(dispatchersProvider.io) {
         val tagMap = async { findAllTagAssociations() }
         retrieveTrns(
-            dbCall = transactionDao::findAll,
+            dbCall = transactionDataSource::findAll,
             retrieveTags = {
                 tagMap.await()[it.id] ?: emptyList()
             }
@@ -44,7 +42,7 @@ class TransactionRepository @Inject constructor(
         accountId: AccountId
     ): List<Income> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByTypeAndAccount(
+            transactionDataSource.findAllByTypeAndAccount(
                 type = TransactionType.INCOME,
                 accountId = accountId.value
             )
@@ -55,7 +53,7 @@ class TransactionRepository @Inject constructor(
         accountId: AccountId
     ): List<Expense> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByTypeAndAccount(
+            transactionDataSource.findAllByTypeAndAccount(
                 type = TransactionType.EXPENSE,
                 accountId = accountId.value
             )
@@ -66,7 +64,7 @@ class TransactionRepository @Inject constructor(
         accountId: AccountId
     ): List<Transfer> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByTypeAndAccount(
+            transactionDataSource.findAllByTypeAndAccount(
                 type = TransactionType.TRANSFER,
                 accountId = accountId.value
             )
@@ -77,7 +75,7 @@ class TransactionRepository @Inject constructor(
         toAccountId: AccountId
     ): List<Transfer> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllTransfersToAccount(toAccountId = toAccountId.value)
+            transactionDataSource.findAllTransfersToAccount(toAccountId = toAccountId.value)
         }
     ).filterIsInstance<Transfer>()
 
@@ -85,7 +83,7 @@ class TransactionRepository @Inject constructor(
         startDate: Instant,
         endDate: Instant
     ): List<Transaction> = withContext(dispatchersProvider.io) {
-        val transactions = transactionDao.findAllBetween(startDate, endDate)
+        val transactions = transactionDataSource.findAllBetween(startDate, endDate)
         val tagAssociationMap = getTagsForTransactionIds(transactions)
         transactions.mapNotNull {
             val tags = tagAssociationMap[it.id] ?: emptyList()
@@ -99,7 +97,7 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByAccountAndBetween(
+            transactionDataSource.findAllByAccountAndBetween(
                 accountId = accountId.value,
                 startDate = startDate,
                 endDate = endDate
@@ -113,11 +111,10 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllToAccountAndBetween(
-                toAccountId = toAccountId.value,
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            // For now, filter from findAllTransfersToAccount
+            transactionDataSource.findAllTransfersToAccount(toAccountId.value)
+                .filter { it.dateTime != null && it.dateTime >= startDate && it.dateTime <= endDate }
         }
     )
 
@@ -126,10 +123,10 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllDueToBetween(
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            // For now, filter from findAllBetween with dueDate
+            transactionDataSource.findAll()
+                .filter { it.dueDate != null && it.dueDate >= startDate && it.dueDate <= endDate }
         }
     )
 
@@ -139,11 +136,12 @@ class TransactionRepository @Inject constructor(
         categoryId: CategoryId
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllDueToBetweenByCategory(
-                startDate = startDate,
-                endDate = endDate,
-                categoryId = categoryId.value
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAll()
+                .filter {
+                    it.categoryId == categoryId.value &&
+                        it.dueDate != null && it.dueDate >= startDate && it.dueDate <= endDate
+                }
         }
     )
 
@@ -152,10 +150,12 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllDueToBetweenByCategoryUnspecified(
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAll()
+                .filter {
+                    it.categoryId == null &&
+                        it.dueDate != null && it.dueDate >= startDate && it.dueDate <= endDate
+                }
         }
     )
 
@@ -165,11 +165,12 @@ class TransactionRepository @Inject constructor(
         accountId: AccountId
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllDueToBetweenByAccount(
-                startDate = startDate,
-                endDate = endDate,
-                accountId = accountId.value
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAll()
+                .filter {
+                    it.accountId == accountId.value &&
+                        it.dueDate != null && it.dueDate >= startDate && it.dueDate <= endDate
+                }
         }
     )
 
@@ -180,12 +181,9 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByCategoryAndTypeAndBetween(
-                categoryId = categoryId,
-                type = type,
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAllBetween(startDate, endDate)
+                .filter { it.categoryId == categoryId && it.type == type }
         }
     )
 
@@ -195,11 +193,9 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllUnspecifiedAndTypeAndBetween(
-                type = type,
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAllBetween(startDate, endDate)
+                .filter { it.categoryId == null && it.type == type }
         }
     )
 
@@ -208,10 +204,9 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllUnspecifiedAndBetween(
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAllBetween(startDate, endDate)
+                .filter { it.categoryId == null }
         }
     )
 
@@ -221,24 +216,22 @@ class TransactionRepository @Inject constructor(
         endDate: Instant
     ): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByCategoryAndBetween(
-                categoryId = categoryId,
-                startDate = startDate,
-                endDate = endDate
-            )
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAllBetween(startDate, endDate)
+                .filter { it.categoryId == categoryId }
         }
     )
 
     suspend fun findAllByRecurringRuleId(recurringRuleId: UUID): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByRecurringRuleId(recurringRuleId)
+            transactionDataSource.findAllByRecurringRuleId(recurringRuleId)
         }
     )
 
     suspend fun findById(
         id: TransactionId
     ): Transaction? = withContext(dispatchersProvider.io) {
-        transactionDao.findById(id.value)?.let {
+        transactionDataSource.findById(id.value)?.let {
             with(mapper) { it.toDomain() }.getOrNull()
         }
     }
@@ -248,7 +241,7 @@ class TransactionRepository @Inject constructor(
             val tagMap = async { findTagsForTransactionIds(ids) }
             retrieveTrns(
                 dbCall = {
-                    transactionDao.findByIds(ids.map { it.value })
+                    transactionDataSource.findByIds(ids.map { it.value })
                 },
                 retrieveTags = {
                     tagMap.await()[it.id] ?: emptyList()
@@ -259,7 +252,7 @@ class TransactionRepository @Inject constructor(
 
     suspend fun save(value: Transaction) {
         withContext(dispatchersProvider.io) {
-            writeTransactionDao.save(
+            transactionDataSource.save(
                 with(mapper) { value.toEntity() }
             )
         }
@@ -267,7 +260,7 @@ class TransactionRepository @Inject constructor(
 
     suspend fun saveMany(value: List<Transaction>) {
         withContext(dispatchersProvider.io) {
-            writeTransactionDao.saveMany(
+            transactionDataSource.saveMany(
                 value.map { with(mapper) { it.toEntity() } }
             )
         }
@@ -275,49 +268,56 @@ class TransactionRepository @Inject constructor(
 
     suspend fun deleteById(id: TransactionId) {
         withContext(dispatchersProvider.io) {
-            writeTransactionDao.deleteById(id.value)
+            transactionDataSource.deleteById(id.value)
         }
     }
 
     suspend fun deleteAllByAccountId(accountId: AccountId) {
         withContext(dispatchersProvider.io) {
-            writeTransactionDao.deleteAllByAccountId(accountId.value)
+            transactionDataSource.deleteAllByAccountId(accountId.value)
         }
     }
 
     suspend fun deletedByRecurringRuleIdAndNoDateTime(recurringRuleId: UUID) {
         withContext(dispatchersProvider.io) {
-            writeTransactionDao.deletedByRecurringRuleIdAndNoDateTime(recurringRuleId)
+            // This would need to be added to TransactionSupabaseDataSource
+            val transactions = transactionDataSource.findAllByRecurringRuleId(recurringRuleId)
+                .filter { it.dateTime == null }
+            transactions.forEach { transactionDataSource.deleteById(it.id) }
         }
     }
 
     suspend fun deleteAll() {
         withContext(dispatchersProvider.io) {
-            writeTransactionDao.deleteAll()
+            transactionDataSource.deleteAll()
         }
     }
 
     suspend fun countHappenedTransactions(): NonNegativeLong = withContext(dispatchersProvider.io) {
-        transactionDao.countHappenedTransactions().toNonNegative()
+        transactionDataSource.countHappenedTransactions().toNonNegative()
     }
 
     suspend fun findLoanTransaction(loanId: UUID): Transaction? =
         withContext(dispatchersProvider.io) {
-            transactionDao.findLoanTransaction(loanId)?.let {
-                with(mapper) { it.toDomain() }.getOrNull()
-            }
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAll()
+                .firstOrNull { it.loanId == loanId }
+                ?.let { with(mapper) { it.toDomain() }.getOrNull() }
         }
 
     suspend fun findLoanRecordTransaction(loanRecordId: UUID): Transaction? =
         withContext(dispatchersProvider.io) {
-            transactionDao.findLoanRecordTransaction(loanRecordId)?.let {
-                with(mapper) { it.toDomain() }.getOrNull()
-            }
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAll()
+                .firstOrNull { it.loanRecordId == loanRecordId }
+                ?.let { with(mapper) { it.toDomain() }.getOrNull() }
         }
 
     suspend fun findAllByLoanId(loanId: UUID): List<Transaction> = retrieveTrns(
         dbCall = {
-            transactionDao.findAllByLoanId(loanId)
+            // This would need to be added to TransactionSupabaseDataSource
+            transactionDataSource.findAll()
+                .filter { it.loanId == loanId }
         }
     )
 
