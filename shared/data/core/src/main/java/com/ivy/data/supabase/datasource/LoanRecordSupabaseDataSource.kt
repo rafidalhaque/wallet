@@ -5,6 +5,7 @@ import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,7 +43,7 @@ class LoanRecordSupabaseDataSource @Inject constructor(
                         eq("loanId", loanId.toString())
                         eq("isDeleted", false)
                     }
-                    order("dateTime", ascending = false)
+                    order(column = "dateTime", order = Order.DESCENDING)
                 }
                 .decodeList<LoanRecordEntity>()
         } catch (e: Exception) {
