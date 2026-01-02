@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.ExchangeRateEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class ExchangeRateSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "exchange_rates"
+    
 
     suspend fun findAll(): List<ExchangeRateEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .select(columns = Columns.ALL)
                 .decodeList<ExchangeRateEntity>()
         } catch (e: Exception) {
@@ -30,7 +32,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
 
     suspend fun findByBaseCurrency(baseCurrency: String): List<ExchangeRateEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("baseCurrency", baseCurrency)
@@ -47,7 +49,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
         currency: String
     ): ExchangeRateEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("baseCurrency", baseCurrency)
@@ -62,7 +64,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: ExchangeRateEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save exchange rate: ${e.message}", e)
@@ -71,7 +73,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<ExchangeRateEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save exchange rates: ${e.message}", e)
@@ -83,7 +85,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
         currency: String
     ) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .delete {
                     filter {
                         eq("baseCurrency", baseCurrency)
@@ -97,7 +99,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.exchangeRates)
                 .delete {
                     filter {
                         neq("baseCurrency", "")

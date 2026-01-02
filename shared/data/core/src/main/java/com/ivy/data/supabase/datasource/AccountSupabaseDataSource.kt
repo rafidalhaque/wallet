@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.AccountEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,12 @@ import javax.inject.Singleton
  */
 @Singleton
 class AccountSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "accounts"
-
     suspend fun findById(id: UUID): AccountEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.accounts)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("id", id.toString())
@@ -34,7 +34,7 @@ class AccountSupabaseDataSource @Inject constructor(
 
     suspend fun findAll(): List<AccountEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.accounts)
                 .select(columns = Columns.ALL)
                 .decodeList<AccountEntity>()
         } catch (e: Exception) {
@@ -53,7 +53,7 @@ class AccountSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: AccountEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.accounts)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save account: ${e.message}", e)
@@ -62,7 +62,7 @@ class AccountSupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<AccountEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.accounts)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save accounts: ${e.message}", e)
@@ -71,7 +71,7 @@ class AccountSupabaseDataSource @Inject constructor(
 
     suspend fun deleteById(id: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.accounts)
                 .delete {
                     filter {
                         eq("id", id.toString())
@@ -84,7 +84,7 @@ class AccountSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.accounts)
                 .delete {
                     filter {
                         // Delete all records

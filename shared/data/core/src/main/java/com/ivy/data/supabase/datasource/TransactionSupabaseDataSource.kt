@@ -2,6 +2,7 @@ package com.ivy.data.supabase.datasource
 
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.entity.TransactionEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -16,13 +17,12 @@ import javax.inject.Singleton
  */
 @Singleton
 class TransactionSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "transactions"
-
     suspend fun findAll(): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("isDeleted", false)
@@ -37,7 +37,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun findById(id: UUID): TransactionEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("id", id.toString())
@@ -52,7 +52,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun findByIds(ids: List<UUID>): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         isIn("id", ids.map { it.toString() })
@@ -70,7 +70,7 @@ class TransactionSupabaseDataSource @Inject constructor(
         accountId: UUID
     ): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("type", type.name)
@@ -87,7 +87,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun findAllTransfersToAccount(toAccountId: UUID): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("type", TransactionType.TRANSFER.name)
@@ -107,7 +107,7 @@ class TransactionSupabaseDataSource @Inject constructor(
         endDate: Instant
     ): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         gte("dateTime", startDate.toString())
@@ -128,7 +128,7 @@ class TransactionSupabaseDataSource @Inject constructor(
         endDate: Instant
     ): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("accountId", accountId.toString())
@@ -146,7 +146,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun findAllByRecurringRuleId(recurringRuleId: UUID): List<TransactionEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("recurringRuleId", recurringRuleId.toString())
@@ -161,7 +161,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun countHappenedTransactions(): Long {
         return try {
-            val transactions = supabaseClient.from(tableName)
+            val transactions = supabaseClient.from(tableNames.transactions)
                 .select(columns = Columns.list("id")) {
                     filter {
                         eq("isDeleted", false)
@@ -178,7 +178,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: TransactionEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save transaction: ${e.message}", e)
@@ -187,7 +187,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<TransactionEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save transactions: ${e.message}", e)
@@ -196,7 +196,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun deleteById(id: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .delete {
                     filter {
                         eq("id", id.toString())
@@ -209,7 +209,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAllByAccountId(accountId: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .delete {
                     filter {
                         eq("accountId", accountId.toString())
@@ -222,7 +222,7 @@ class TransactionSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.transactions)
                 .delete {
                     filter {
                         neq("id", "00000000-0000-0000-0000-000000000000")

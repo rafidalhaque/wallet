@@ -34,6 +34,8 @@ Ivy Wallet is being migrated from local-first storage (Room Database + DataStore
 
 Create the following tables in your Supabase project using the SQL Editor:
 
+**Note:** If you're using a table prefix (via `SUPABASE_TABLE_PREFIX` environment variable), replace table names accordingly. For example, if your prefix is "dev_", create tables as `dev_accounts`, `dev_transactions`, etc.
+
 ```sql
 -- Accounts table (matches AccountEntity)
 CREATE TABLE accounts (
@@ -267,17 +269,24 @@ CREATE POLICY "Users can delete their own accounts" ON accounts
 
 ### Environment Variables
 
-The app requires two environment variables to connect to Supabase:
+The app requires three environment variables to connect to Supabase:
 
 - `SUPABASE_URL`: Your Supabase project URL
 - `SUPABASE_ANON_KEY`: Your Supabase anonymous (public) key
+- `SUPABASE_TABLE_PREFIX`: (Optional) Prefix for all table names (e.g., "dev_", "staging_", "prod_")
 
 For development, you can set these in your IDE's run configuration or in your shell:
 
 ```bash
 export SUPABASE_URL="https://xxxxxxxxxxxx.supabase.co"
 export SUPABASE_ANON_KEY="your-anon-key-here"
+export SUPABASE_TABLE_PREFIX="dev_"
 ```
+
+**Table Prefix Usage:**
+- If `SUPABASE_TABLE_PREFIX` is set to "dev_", tables will be named: `dev_accounts`, `dev_transactions`, etc.
+- If not set or empty, tables will use default names: `accounts`, `transactions`, etc.
+- This allows multiple environments (dev, staging, prod) to share the same Supabase project
 
 For production builds, these should be stored securely and not committed to version control.
 

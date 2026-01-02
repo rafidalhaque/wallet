@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.PlannedPaymentRuleEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "planned_payment_rules"
+    
 
     suspend fun findAll(): List<PlannedPaymentRuleEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("isDeleted", false)
@@ -34,7 +36,7 @@ class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
 
     suspend fun findById(id: UUID): PlannedPaymentRuleEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("id", id.toString())
@@ -49,7 +51,7 @@ class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
 
     suspend fun findByAccountId(accountId: UUID): List<PlannedPaymentRuleEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("accountId", accountId.toString())
@@ -64,7 +66,7 @@ class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: PlannedPaymentRuleEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save planned payment rule: ${e.message}", e)
@@ -73,7 +75,7 @@ class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<PlannedPaymentRuleEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save planned payment rules: ${e.message}", e)
@@ -82,7 +84,7 @@ class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
 
     suspend fun deleteById(id: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .delete {
                     filter {
                         eq("id", id.toString())
@@ -95,7 +97,7 @@ class PlannedPaymentRuleSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.plannedPaymentRules)
                 .delete {
                     filter {
                         neq("id", "00000000-0000-0000-0000-000000000000")

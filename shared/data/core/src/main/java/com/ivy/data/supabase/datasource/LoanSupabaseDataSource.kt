@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.LoanEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class LoanSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "loans"
+    
 
     suspend fun findAll(): List<LoanEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.loans)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("isDeleted", false)
@@ -34,7 +36,7 @@ class LoanSupabaseDataSource @Inject constructor(
 
     suspend fun findById(id: UUID): LoanEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.loans)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("id", id.toString())
@@ -49,7 +51,7 @@ class LoanSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: LoanEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.loans)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save loan: ${e.message}", e)
@@ -58,7 +60,7 @@ class LoanSupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<LoanEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.loans)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save loans: ${e.message}", e)
@@ -67,7 +69,7 @@ class LoanSupabaseDataSource @Inject constructor(
 
     suspend fun deleteById(id: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.loans)
                 .delete {
                     filter {
                         eq("id", id.toString())
@@ -80,7 +82,7 @@ class LoanSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.loans)
                 .delete {
                     filter {
                         neq("id", "00000000-0000-0000-0000-000000000000")

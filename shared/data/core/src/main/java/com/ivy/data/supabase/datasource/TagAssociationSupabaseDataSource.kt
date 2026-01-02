@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.TagAssociationEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class TagAssociationSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "tags_association"
+    
 
     suspend fun findByTagId(tagId: UUID): List<TagAssociationEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("tagId", tagId.toString())
@@ -35,7 +37,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun findByAssociatedId(associatedId: UUID): List<TagAssociationEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("associatedId", associatedId.toString())
@@ -50,7 +52,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun findByAssociatedIds(associatedIds: List<UUID>): List<TagAssociationEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .select(columns = Columns.ALL) {
                     filter {
                         isIn("associatedId", associatedIds.map { it.toString() })
@@ -65,7 +67,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun findAll(): List<TagAssociationEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("isDeleted", false)
@@ -79,7 +81,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: TagAssociationEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save tag association: ${e.message}", e)
@@ -88,7 +90,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<TagAssociationEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save tag associations: ${e.message}", e)
@@ -97,7 +99,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun deleteByTagIdAndAssociatedId(tagId: UUID, associatedId: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .delete {
                     filter {
                         eq("tagId", tagId.toString())
@@ -111,7 +113,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun deleteByAssociatedId(associatedId: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .delete {
                     filter {
                         eq("associatedId", associatedId.toString())
@@ -124,7 +126,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.tagsAssociation)
                 .delete {
                     filter {
                         neq("tagId", "00000000-0000-0000-0000-000000000000")

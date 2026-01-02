@@ -50,5 +50,6 @@ object IvySupabaseClient {
  */
 data class SupabaseConfig(
     val url: String,
-    val anonKey: String
+    val anonKey: String,
+    val tablePrefix: String = ""
 )

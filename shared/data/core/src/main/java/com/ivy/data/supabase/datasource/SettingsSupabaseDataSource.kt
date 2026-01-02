@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.SettingsEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class SettingsSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "settings"
+    
 
     suspend fun findFirst(): SettingsEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.settings)
                 .select(columns = Columns.ALL)
                 .limit(1)
                 .decodeSingleOrNull<SettingsEntity>()
@@ -31,7 +33,7 @@ class SettingsSupabaseDataSource @Inject constructor(
 
     suspend fun findAll(): List<SettingsEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.settings)
                 .select(columns = Columns.ALL)
                 .decodeList<SettingsEntity>()
         } catch (e: Exception) {
@@ -41,7 +43,7 @@ class SettingsSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: SettingsEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.settings)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save settings: ${e.message}", e)
@@ -50,7 +52,7 @@ class SettingsSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.settings)
                 .delete {
                     filter {
                         neq("id", "00000000-0000-0000-0000-000000000000")

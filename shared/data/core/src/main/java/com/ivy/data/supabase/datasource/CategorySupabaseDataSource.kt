@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.CategoryEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -14,13 +15,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class CategorySupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "categories"
+    
 
     suspend fun findAll(): List<CategoryEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.categories)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("isDeleted", false)
@@ -34,7 +36,7 @@ class CategorySupabaseDataSource @Inject constructor(
 
     suspend fun findById(id: UUID): CategoryEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.categories)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("id", id.toString())
@@ -58,7 +60,7 @@ class CategorySupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: CategoryEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.categories)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save category: ${e.message}", e)
@@ -67,7 +69,7 @@ class CategorySupabaseDataSource @Inject constructor(
 
     suspend fun saveMany(entities: List<CategoryEntity>) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.categories)
                 .upsert(entities)
         } catch (e: Exception) {
             throw Exception("Failed to save categories: ${e.message}", e)
@@ -76,7 +78,7 @@ class CategorySupabaseDataSource @Inject constructor(
 
     suspend fun deleteById(id: UUID) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.categories)
                 .delete {
                     filter {
                         eq("id", id.toString())
@@ -89,7 +91,7 @@ class CategorySupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.categories)
                 .delete {
                     filter {
                         neq("id", "00000000-0000-0000-0000-000000000000")

@@ -1,6 +1,7 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.UserEntity
+import com.ivy.data.supabase.SupabaseTableNames
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -15,13 +16,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class UserSupabaseDataSource @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    private val tableNames: SupabaseTableNames
 ) {
-    private val tableName = "users"
+    
 
     suspend fun findAll(): List<UserEntity> {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.users)
                 .select(columns = Columns.ALL)
                 .decodeList<UserEntity>()
         } catch (e: Exception) {
@@ -31,7 +33,7 @@ class UserSupabaseDataSource @Inject constructor(
 
     suspend fun findById(id: UUID): UserEntity? {
         return try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.users)
                 .select(columns = Columns.ALL) {
                     filter {
                         eq("id", id.toString())
@@ -45,7 +47,7 @@ class UserSupabaseDataSource @Inject constructor(
 
     suspend fun save(entity: UserEntity) {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.users)
                 .upsert(entity)
         } catch (e: Exception) {
             throw Exception("Failed to save user: ${e.message}", e)
@@ -54,7 +56,7 @@ class UserSupabaseDataSource @Inject constructor(
 
     suspend fun deleteAll() {
         try {
-            supabaseClient.from(tableName)
+            supabaseClient.from(tableNames.users)
                 .delete {
                     filter {
                         neq("id", "00000000-0000-0000-0000-000000000000")

@@ -19,10 +19,11 @@ object SupabaseModule {
     @Singleton
     fun provideSupabaseConfig(): SupabaseConfig {
         // TODO: Load from BuildConfig or secure storage
-        // For now, using placeholder values
+        // For now, using environment variables
         return SupabaseConfig(
             url = System.getenv("SUPABASE_URL") ?: "https://your-project.supabase.co",
-            anonKey = System.getenv("SUPABASE_ANON_KEY") ?: "your-anon-key"
+            anonKey = System.getenv("SUPABASE_ANON_KEY") ?: "your-anon-key",
+            tablePrefix = System.getenv("SUPABASE_TABLE_PREFIX") ?: ""
         )
     }
 
