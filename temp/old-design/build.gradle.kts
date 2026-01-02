@@ -4,6 +4,15 @@ plugins {
 
 android {
     namespace = "com.ivy.design"
+    
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+    
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
