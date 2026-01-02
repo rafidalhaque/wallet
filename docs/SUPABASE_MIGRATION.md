@@ -32,249 +32,94 @@ Ivy Wallet is being migrated from local-first storage (Room Database + DataStore
 
 ### 2. Database Schema Setup
 
-Create the following tables in your Supabase project using the SQL Editor:
+The complete database schema is available in [`supabase-schema.sql`](./supabase-schema.sql).
 
-**Note:** If you're using a table prefix (via `SUPABASE_TABLE_PREFIX` environment variable), replace table names accordingly. For example, if your prefix is "dev_", create tables as `dev_accounts`, `dev_transactions`, etc.
+To set up your Supabase database:
 
-```sql
--- Accounts table (matches AccountEntity)
-CREATE TABLE accounts (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    currency TEXT,
-    color INTEGER NOT NULL,
-    icon TEXT,
-    "orderNum" DOUBLE PRECISION DEFAULT 0.0,
-    "includeInBalance" BOOLEAN DEFAULT true,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false
-);
+1. Open your Supabase project's SQL Editor
+2. Copy the contents of `docs/supabase-schema.sql`
+3. If using a table prefix (via `SUPABASE_TABLE_PREFIX` environment variable), replace all table names with prefixed versions:
+   - Example: `accounts` → `dev_accounts`, `transactions` → `dev_transactions`
+4. Execute the SQL script
 
--- Transactions table (matches TransactionEntity)
-CREATE TABLE transactions (
-    id UUID PRIMARY KEY,
-    "accountId" UUID NOT NULL,
-    type TEXT NOT NULL,
-    amount DOUBLE PRECISION NOT NULL,
-    "toAccountId" UUID,
-    "toAmount" DOUBLE PRECISION,
-    title TEXT,
-    description TEXT,
-    "dateTime" TIMESTAMP WITH TIME ZONE,
-    "categoryId" UUID,
-    "dueDate" TIMESTAMP WITH TIME ZONE,
-    "recurringRuleId" UUID,
-    "paidForDateTime" TIMESTAMP WITH TIME ZONE,
-    "attachmentUrl" TEXT,
-    "loanId" UUID,
-    "loanRecordId" UUID,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false
-);
+The schema includes:
+- **13 tables** matching Room entities exactly
+- **7 indexes** for query performance
+- **Row Level Security (RLS)** configuration
+- **Example RLS policies** for the accounts table
 
--- Categories table (matches CategoryEntity)
-CREATE TABLE categories (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    color INTEGER NOT NULL,
-    icon TEXT,
-    "orderNum" DOUBLE PRECISION DEFAULT 0.0,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false
-);
-
--- Settings table (matches SettingsEntity)
-CREATE TABLE settings (
-    id UUID PRIMARY KEY,
-    theme TEXT NOT NULL,
-    currency TEXT NOT NULL,
-    "bufferAmount" DOUBLE PRECISION NOT NULL,
-    name TEXT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false
-);
-
--- Budgets table (matches BudgetEntity)
-CREATE TABLE budgets (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    amount DOUBLE PRECISION NOT NULL,
-    "categoryIdsSerialized" TEXT,
-    "accountIdsSerialized" TEXT,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false,
-    "orderId" DOUBLE PRECISION NOT NULL
-);
-
--- Planned Payment Rules table (matches PlannedPaymentRuleEntity)
-CREATE TABLE planned_payment_rules (
-    id UUID PRIMARY KEY,
-    "startDate" TIMESTAMP WITH TIME ZONE,
-    "intervalType" TEXT,
-    "intervalN" INTEGER,
-    "oneTime" BOOLEAN NOT NULL,
-    type TEXT NOT NULL,
-    "accountId" UUID NOT NULL,
-    amount DOUBLE PRECISION DEFAULT 0.0,
-    "categoryId" UUID,
-    title TEXT,
-    description TEXT,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false
-);
-
--- Tags table (matches TagEntity)
-CREATE TABLE tags (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    color INTEGER NOT NULL,
-    icon TEXT,
-    "orderNum" DOUBLE PRECISION NOT NULL,
-    "creationTime" TIMESTAMP WITH TIME ZONE NOT NULL,
-    "isDeleted" BOOLEAN NOT NULL,
-    "lastSyncTime" TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
--- Tag Associations table (matches TagAssociationEntity - composite primary key)
-CREATE TABLE tags_association (
-    "tagId" UUID NOT NULL,
-    "associatedId" UUID NOT NULL,
-    "lastSyncTime" TIMESTAMP WITH TIME ZONE NOT NULL,
-    "isDeleted" BOOLEAN NOT NULL,
-    PRIMARY KEY ("tagId", "associatedId")
-);
-
--- Exchange Rates table (matches ExchangeRateEntity - composite primary key)
-CREATE TABLE exchange_rates (
-    "baseCurrency" TEXT NOT NULL,
-    currency TEXT NOT NULL,
-    rate DOUBLE PRECISION NOT NULL,
-    "manualOverride" BOOLEAN DEFAULT false,
-    PRIMARY KEY ("baseCurrency", currency)
-);
-
--- Users table (matches UserEntity - marked as deprecated/legacy)
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    email TEXT NOT NULL,
-    "authProviderType" TEXT NOT NULL,
-    "firstName" TEXT NOT NULL,
-    "lastName" TEXT,
-    "profilePicture" TEXT,
-    color INTEGER NOT NULL,
-    "testUser" BOOLEAN DEFAULT false
-);
-
--- Loans table (matches LoanEntity)
-CREATE TABLE loans (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    amount DOUBLE PRECISION NOT NULL,
-    type TEXT NOT NULL,
-    color INTEGER DEFAULT 0,
-    icon TEXT,
-    "orderNum" DOUBLE PRECISION DEFAULT 0.0,
-    "accountId" UUID,
-    note TEXT,
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false,
-    "dateTime" TEXT
-);
-
--- Loan Records table (matches LoanRecordEntity)
-CREATE TABLE loan_records (
-    id UUID PRIMARY KEY,
-    "loanId" UUID NOT NULL,
-    amount DOUBLE PRECISION NOT NULL,
-    note TEXT,
-    "dateTime" TIMESTAMP WITH TIME ZONE NOT NULL,
-    interest BOOLEAN DEFAULT false,
-    "accountId" UUID,
-    "convertedAmount" DOUBLE PRECISION,
-    "loanRecordType" TEXT DEFAULT 'DECREASE',
-    "isSynced" BOOLEAN DEFAULT false,
-    "isDeleted" BOOLEAN DEFAULT false
-);
-
--- Poll Votes table (replaces Firebase Firestore polls collection)
-CREATE TABLE poll_votes (
-    "deviceId" TEXT NOT NULL,
-    "pollId" TEXT NOT NULL,
-    option TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
-    PRIMARY KEY ("deviceId", "pollId")
-);
-
--- Create indexes for better query performance
-CREATE INDEX idx_transactions_account ON transactions("accountId");
-CREATE INDEX idx_transactions_category ON transactions("categoryId");
-CREATE INDEX idx_transactions_date ON transactions("dateTime");
-CREATE INDEX idx_transactions_deleted ON transactions("isDeleted");
-CREATE INDEX idx_tags_association_tag ON tags_association("tagId");
-CREATE INDEX idx_tags_association_associated ON tags_association("associatedId");
-CREATE INDEX idx_poll_votes_poll ON poll_votes("pollId");
-
--- Enable Row Level Security (RLS) - Important for multi-user scenarios
-ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE planned_payment_rules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tags_association ENABLE ROW LEVEL SECURITY;
-ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE loan_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE poll_votes ENABLE ROW LEVEL SECURITY;
-
--- Create RLS policies (example for accounts - replicate for other tables)
--- Allow all operations for authenticated users on their own data
-CREATE POLICY "Users can view their own accounts" ON accounts
-    FOR SELECT USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can insert their own accounts" ON accounts
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can update their own accounts" ON accounts
-    FOR UPDATE USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can delete their own accounts" ON accounts
-    FOR DELETE USING (auth.uid() IS NOT NULL);
-```
+**Note:** Customize the RLS policies based on your authentication and data access requirements.
 
 ## Implementation Status
 
 ### ✅ Completed
-- [x] Supabase Kotlin client dependency added
+
+#### Infrastructure
+- [x] Supabase Kotlin client dependency added (v2.6.1)
 - [x] Supabase client configuration created
 - [x] Hilt module for Supabase DI
-- [x] Account data source (replaces AccountDao)
-- [x] Transaction data source (replaces TransactionDao)
-- [x] Category data source (replaces CategoryDao)
-- [x] Settings data source (replaces SettingsDao and DataStore)
+- [x] SupabaseTableNames helper for multi-environment support
 
-### 🚧 In Progress
-- [ ] Complete all data sources for remaining entities:
-  - [ ] Budget data source
-  - [ ] Loan data source
-  - [ ] LoanRecord data source
-  - [ ] PlannedPaymentRule data source
-  - [ ] Tag data source
-  - [ ] TagAssociation data source
-  - [ ] ExchangeRate data source
-  - [ ] User data source
-- [ ] Update repositories to use Supabase data sources
-- [ ] Replace Firebase Firestore poll voting with Supabase
-- [ ] Data migration utility from Room to Supabase
-- [ ] Offline support and sync strategy
+#### Data Sources (12/12 Complete)
+- [x] AccountSupabaseDataSource (replaces AccountDao + WriteAccountDao)
+- [x] TransactionSupabaseDataSource (replaces TransactionDao + WriteTransactionDao)
+- [x] CategorySupabaseDataSource (replaces CategoryDao + WriteCategoryDao)
+- [x] SettingsSupabaseDataSource (replaces SettingsDao + WriteSettingsDao)
+- [x] BudgetSupabaseDataSource (replaces BudgetDao + WriteBudgetDao)
+- [x] LoanSupabaseDataSource (replaces LoanDao + WriteLoanDao)
+- [x] LoanRecordSupabaseDataSource (replaces LoanRecordDao + WriteLoanRecordDao)
+- [x] PlannedPaymentRuleSupabaseDataSource (replaces PlannedPaymentRuleDao + WritePlannedPaymentRuleDao)
+- [x] TagSupabaseDataSource (replaces TagDao + WriteTagDao)
+- [x] TagAssociationSupabaseDataSource (replaces TagAssociationDao + WriteTagAssociationDao)
+- [x] ExchangeRateSupabaseDataSource (replaces ExchangeRatesDao + WriteExchangeRatesDao)
+- [x] UserSupabaseDataSource (replaces UserDao)
 
-### 📋 TODO
-- [ ] Remove Room database dependencies
-- [ ] Remove DataStore dependencies
+#### Repositories (6/6 Complete)
+- [x] AccountRepository updated to use Supabase
+- [x] CategoryRepository updated to use Supabase
+- [x] TransactionRepository updated to use Supabase
+- [x] ExchangeRatesRepository updated to use Supabase
+- [x] TagRepository updated to use Supabase
+- [x] CurrencyRepository updated to use Supabase
+
+#### Firebase Replacement
+- [x] PollRepositoryImpl - Replaced Firebase Firestore with Supabase poll_votes table
+
+#### Database Schema
+- [x] Complete SQL schema for 13 tables
+- [x] Indexes for query performance
+- [x] Row Level Security configuration
+- [x] SQL schema extracted to separate file (`supabase-schema.sql`)
+
+#### Documentation
+- [x] Complete migration guide
+- [x] Implementation summary document
+- [x] Environment configuration guide
+- [x] Multi-environment table prefix documentation
+
+### 📋 Remaining Tasks (Lower Priority)
+
+#### Testing
+- [ ] Unit tests for Supabase data sources
+- [ ] Integration tests with test Supabase project
+- [ ] End-to-end testing
+
+#### Data Migration
+- [ ] Migration utility to export data from Room
+- [ ] Migration utility to import data to Supabase
+- [ ] Offline-to-online sync strategy
+
+#### Optimization
+- [ ] Performance optimization for complex queries
+- [ ] Implement caching layer for offline support
+- [ ] Real-time subscriptions for live updates
+
+#### Cleanup (Keep for Migration Period)
+- [ ] Remove Room database dependencies (after migration period)
 - [ ] Remove Firebase Firestore dependencies (keep Crashlytics)
-- [ ] Update tests
-- [ ] Documentation updates
+- [ ] Clean up deprecated code
+
+**Note:** Room dependencies are intentionally kept for a transition period to support data migration. DataStore is kept for simple local preferences (device ID, poll voting state) that don't require cloud sync.
 
 ## Configuration
 
