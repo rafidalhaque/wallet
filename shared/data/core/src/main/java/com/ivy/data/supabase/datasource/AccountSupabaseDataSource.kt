@@ -1,13 +1,21 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.AccountEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import java.util.UUID
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Account operations
@@ -56,7 +64,7 @@ class AccountSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.accounts)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save account: ${e.message}", e)
+            throw SupabaseDataException("Failed to save account: ${e.message}", e)
         }
     }
 
@@ -65,7 +73,7 @@ class AccountSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.accounts)
                 .upsert(entities)
         } catch (e: Exception) {
-            throw Exception("Failed to save accounts: ${e.message}", e)
+            throw SupabaseDataException("Failed to save accounts: ${e.message}", e)
         }
     }
 
@@ -78,7 +86,7 @@ class AccountSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete account: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete account: ${e.message}", e)
         }
     }
 
@@ -92,7 +100,7 @@ class AccountSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all accounts: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all accounts: ${e.message}", e)
         }
     }
 }

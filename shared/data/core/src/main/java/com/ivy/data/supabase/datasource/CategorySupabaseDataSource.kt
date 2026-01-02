@@ -1,13 +1,21 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.CategoryEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import java.util.UUID
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Category operations
@@ -63,7 +71,7 @@ class CategorySupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.categories)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save category: ${e.message}", e)
+            throw SupabaseDataException("Failed to save category: ${e.message}", e)
         }
     }
 
@@ -72,7 +80,7 @@ class CategorySupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.categories)
                 .upsert(entities)
         } catch (e: Exception) {
-            throw Exception("Failed to save categories: ${e.message}", e)
+            throw SupabaseDataException("Failed to save categories: ${e.message}", e)
         }
     }
 
@@ -85,7 +93,7 @@ class CategorySupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete category: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete category: ${e.message}", e)
         }
     }
 
@@ -98,7 +106,7 @@ class CategorySupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all categories: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all categories: ${e.message}", e)
         }
     }
 }

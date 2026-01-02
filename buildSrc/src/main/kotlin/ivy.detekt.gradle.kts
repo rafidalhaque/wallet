@@ -33,7 +33,7 @@ tasks.withType<Detekt> {
     }
 
     include("**/*.kt", "**/*.kts")
-    exclude("**/resources/**", "**/build/**", "**/temp/**")
+    exclude("**/resources/**", "**/build/**", "temp/**")
 
     parallel = true
 

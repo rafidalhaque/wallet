@@ -1,12 +1,19 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.ExchangeRateEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Exchange Rate operations
@@ -67,7 +74,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.exchangeRates)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save exchange rate: ${e.message}", e)
+            throw SupabaseDataException("Failed to save exchange rate: ${e.message}", e)
         }
     }
 
@@ -76,7 +83,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.exchangeRates)
                 .upsert(entities)
         } catch (e: Exception) {
-            throw Exception("Failed to save exchange rates: ${e.message}", e)
+            throw SupabaseDataException("Failed to save exchange rates: ${e.message}", e)
         }
     }
 
@@ -93,7 +100,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete exchange rate: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete exchange rate: ${e.message}", e)
         }
     }
 
@@ -106,7 +113,7 @@ class ExchangeRateSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all exchange rates: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all exchange rates: ${e.message}", e)
         }
     }
 }

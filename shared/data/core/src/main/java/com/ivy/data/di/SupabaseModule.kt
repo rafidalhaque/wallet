@@ -46,11 +46,10 @@ object SupabaseModule {
     @Provides
     @Singleton
     fun provideSupabaseClient(
-        @ApplicationContext context: Context,
         config: SupabaseConfig
     ): SupabaseClient {
         if (!IvySupabaseClient.isInitialized) {
-            IvySupabaseClient.initialize(context, config)
+            IvySupabaseClient.initialize(config)
         }
         return IvySupabaseClient.client
     }

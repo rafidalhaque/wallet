@@ -1,13 +1,21 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.BudgetEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import java.util.UUID
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Budget operations
@@ -54,7 +62,7 @@ class BudgetSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.budgets)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save budget: ${e.message}", e)
+            throw SupabaseDataException("Failed to save budget: ${e.message}", e)
         }
     }
 
@@ -63,7 +71,7 @@ class BudgetSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.budgets)
                 .upsert(entities)
         } catch (e: Exception) {
-            throw Exception("Failed to save budgets: ${e.message}", e)
+            throw SupabaseDataException("Failed to save budgets: ${e.message}", e)
         }
     }
 
@@ -76,7 +84,7 @@ class BudgetSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete budget: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete budget: ${e.message}", e)
         }
     }
 
@@ -89,7 +97,7 @@ class BudgetSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all budgets: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all budgets: ${e.message}", e)
         }
     }
 }
