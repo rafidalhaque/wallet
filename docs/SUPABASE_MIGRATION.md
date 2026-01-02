@@ -197,6 +197,15 @@ CREATE TABLE loan_records (
     "isDeleted" BOOLEAN DEFAULT false
 );
 
+-- Poll Votes table (replaces Firebase Firestore polls collection)
+CREATE TABLE poll_votes (
+    "deviceId" TEXT NOT NULL,
+    "pollId" TEXT NOT NULL,
+    option TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    PRIMARY KEY ("deviceId", "pollId")
+);
+
 -- Create indexes for better query performance
 CREATE INDEX idx_transactions_account ON transactions("accountId");
 CREATE INDEX idx_transactions_category ON transactions("categoryId");
@@ -204,6 +213,7 @@ CREATE INDEX idx_transactions_date ON transactions("dateTime");
 CREATE INDEX idx_transactions_deleted ON transactions("isDeleted");
 CREATE INDEX idx_tags_association_tag ON tags_association("tagId");
 CREATE INDEX idx_tags_association_associated ON tags_association("associatedId");
+CREATE INDEX idx_poll_votes_poll ON poll_votes("pollId");
 
 -- Enable Row Level Security (RLS) - Important for multi-user scenarios
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
@@ -216,6 +226,7 @@ ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags_association ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loan_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE poll_votes ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies (example for accounts - replicate for other tables)
 -- Allow all operations for authenticated users on their own data
