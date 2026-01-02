@@ -14,7 +14,7 @@ dependencies {
   implementation(projects.shared.ui.navigation)
   implementation(projects.feature.poll.public)
 
-  implementation(libs.firebase.firestore)
+  implementation(libs.bundles.supabase)
 
   testImplementation(projects.shared.ui.testing)
 }

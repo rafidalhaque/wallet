@@ -98,6 +98,7 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         nameLocalAccount = uiState.name,
         startDateOfMonth = uiState.startDateOfMonth.toInt(),
         languageOptionVisible = uiState.languageOptionVisible,
+        supabaseConfigured = uiState.supabaseConfigured,
         onSetCurrency = {
             viewModel.onEvent(SettingsEvent.SetCurrency(it))
         },
@@ -136,6 +137,12 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         },
         onSwitchLanguage = {
             viewModel.onEvent(SettingsEvent.SwitchLanguage)
+        },
+        onSaveSupabaseConfig = { url, key, prefix ->
+            viewModel.onEvent(SettingsEvent.SaveSupabaseConfig(url, key, prefix))
+        },
+        onClearSupabaseConfig = {
+            viewModel.onEvent(SettingsEvent.ClearSupabaseConfig)
         }
     )
 }
@@ -150,6 +157,7 @@ private fun BoxWithConstraintsScope.UI(
     lockApp: Boolean,
     nameLocalAccount: String?,
     languageOptionVisible: Boolean,
+    supabaseConfigured: Boolean = false,
     onSetCurrency: (String) -> Unit,
     startDateOfMonth: Int = 1,
     showNotifications: Boolean = true,
@@ -168,9 +176,12 @@ private fun BoxWithConstraintsScope.UI(
     onSetStartDateOfMonth: (Int) -> Unit = {},
     onDeleteAllUserData: () -> Unit = {},
     onDeleteCloudUserData: () -> Unit = {},
-    onSwitchLanguage: () -> Unit = {}
+    onSwitchLanguage: () -> Unit = {},
+    onSaveSupabaseConfig: (String, String, String) -> Unit = { _, _, _ -> },
+    onClearSupabaseConfig: () -> Unit = {}
 ) {
     var currencyModalVisible by remember { mutableStateOf(false) }
+    var supabaseConfigDialogVisible by remember { mutableStateOf(false) }
     var nameModalVisible by remember { mutableStateOf(false) }
     var chooseStartDateOfMonthVisible by remember { mutableStateOf(false) }
     var deleteCloudDataModalVisible by remember { mutableStateOf(false) }
@@ -324,6 +335,18 @@ private fun BoxWithConstraintsScope.UI(
                 text = stringResource(R.string.exchange_rates),
             ) {
                 nav.navigateTo(ExchangeRatesScreen)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Supabase Configuration (Hidden/Advanced Setting)
+            SettingsDefaultButton(
+                icon = R.drawable.ic_vue_security_shield,
+                iconPadding = 8.dp,
+                text = "Supabase Config",
+                description = if (supabaseConfigured) "Configured ✓" else "Not configured"
+            ) {
+                supabaseConfigDialogVisible = true
             }
 
             Spacer(Modifier.height(12.dp))
@@ -574,6 +597,14 @@ private fun BoxWithConstraintsScope.UI(
         title = stringResource(R.string.exporting_data),
         description = stringResource(R.string.exporting_data_description),
         visible = progressState
+    )
+
+    SupabaseConfigDialog(
+        visible = supabaseConfigDialogVisible,
+        onDismiss = { supabaseConfigDialogVisible = false },
+        onSave = onSaveSupabaseConfig,
+        onClear = onClearSupabaseConfig,
+        isConfigured = supabaseConfigured
     )
 }
 
