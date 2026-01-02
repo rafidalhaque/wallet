@@ -1,13 +1,21 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.TagAssociationEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import java.util.UUID
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Tag Association operations
@@ -84,7 +92,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.tagsAssociation)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save tag association: ${e.message}", e)
+            throw SupabaseDataException("Failed to save tag association: ${e.message}", e)
         }
     }
 
@@ -93,7 +101,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.tagsAssociation)
                 .upsert(entities)
         } catch (e: Exception) {
-            throw Exception("Failed to save tag associations: ${e.message}", e)
+            throw SupabaseDataException("Failed to save tag associations: ${e.message}", e)
         }
     }
 
@@ -107,7 +115,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete tag association: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete tag association: ${e.message}", e)
         }
     }
 
@@ -120,7 +128,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete tag associations: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete tag associations: ${e.message}", e)
         }
     }
 
@@ -133,7 +141,7 @@ class TagAssociationSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all tag associations: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all tag associations: ${e.message}", e)
         }
     }
 }

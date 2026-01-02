@@ -31,8 +31,7 @@ class ExchangeRatesRepositoryTest {
     fun setup() {
         repository = ExchangeRatesRepository(
             mapper = mapper,
-            exchangeRatesDao = exchangeRatesDao,
-            writeExchangeRatesDao = writeExchangeRatesDao,
+            exchangeRateDataSource = exchangeRatesDao,
             remoteExchangeRatesDataSource = remoteExchangeRatesDataSource,
             dispatchers = TestDispatchersProvider,
         )

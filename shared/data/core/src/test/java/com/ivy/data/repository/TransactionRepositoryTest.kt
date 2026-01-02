@@ -57,8 +57,7 @@ class TransactionRepositoryTest {
         fakeDao: FakeTransactionDao?,
     ): TransactionRepository = TransactionRepository(
         mapper = mapper,
-        transactionDao = fakeDao ?: transactionDao,
-        writeTransactionDao = fakeDao ?: writeTransactionDao,
+        transactionDataSource = fakeDao ?: transactionDao,
         dispatchersProvider = TestDispatchersProvider,
         tagRepository = tagRepository
     )

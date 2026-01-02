@@ -1,16 +1,27 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.base.model.TransactionType
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.db.entity.TransactionEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Order
+import com.ivy.data.supabase.SupabaseDataException
 import java.time.Instant
+import com.ivy.data.supabase.SupabaseDataException
 import java.util.UUID
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Transaction operations
@@ -182,7 +193,7 @@ class TransactionSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.transactions)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save transaction: ${e.message}", e)
+            throw SupabaseDataException("Failed to save transaction: ${e.message}", e)
         }
     }
 
@@ -191,7 +202,7 @@ class TransactionSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.transactions)
                 .upsert(entities)
         } catch (e: Exception) {
-            throw Exception("Failed to save transactions: ${e.message}", e)
+            throw SupabaseDataException("Failed to save transactions: ${e.message}", e)
         }
     }
 
@@ -204,7 +215,7 @@ class TransactionSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete transaction: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete transaction: ${e.message}", e)
         }
     }
 
@@ -217,7 +228,7 @@ class TransactionSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete transactions: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete transactions: ${e.message}", e)
         }
     }
 
@@ -230,7 +241,7 @@ class TransactionSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all transactions: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all transactions: ${e.message}", e)
         }
     }
 }

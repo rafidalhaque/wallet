@@ -56,9 +56,8 @@ class BackupDataUseCaseAndroidTest {
             transactionWriter = db.writeTransactionDao,
             sharedPrefs = SharedPrefs(appContext),
             accountRepository = AccountRepository(
-                accountDao = db.accountDao,
-                writeAccountDao = db.writeAccountDao,
                 mapper = accountMapper,
+                accountDataSource = db.accountDao,
                 dispatchersProvider = TestDispatchersProvider,
                 memoFactory = fakeRepositoryMemoFactory(),
             ),

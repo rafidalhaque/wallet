@@ -19,7 +19,7 @@ object IvySupabaseClient {
      * Initialize the Supabase client with the given configuration
      * This should be called once during app initialization
      */
-    fun initialize(context: Context, config: SupabaseConfig) {
+    fun initialize(config: SupabaseConfig) {
         _client = createSupabaseClient(
             supabaseUrl = config.url,
             supabaseKey = config.anonKey
@@ -51,5 +51,5 @@ object IvySupabaseClient {
 data class SupabaseConfig(
     val url: String,
     val anonKey: String,
-    val tablePrefix: String = ""
+    val tablePrefix: String
 )

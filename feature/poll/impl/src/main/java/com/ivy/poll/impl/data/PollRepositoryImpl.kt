@@ -22,7 +22,7 @@ data class PollVoteEntity(
     val deviceId: String,
     val pollId: String,
     val option: String,
-    val timestamp: String = Instant.now().toString()
+    val timestamp: String
 )
 
 class PollRepositoryImpl @Inject constructor(

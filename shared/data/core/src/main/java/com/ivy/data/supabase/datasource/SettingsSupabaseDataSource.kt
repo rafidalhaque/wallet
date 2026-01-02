@@ -1,12 +1,19 @@
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.SettingsEntity
+import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
+import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
+import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
+import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Settings operations
@@ -46,7 +53,7 @@ class SettingsSupabaseDataSource @Inject constructor(
             supabaseClient.from(tableNames.settings)
                 .upsert(entity)
         } catch (e: Exception) {
-            throw Exception("Failed to save settings: ${e.message}", e)
+            throw SupabaseDataException("Failed to save settings: ${e.message}", e)
         }
     }
 
@@ -59,7 +66,7 @@ class SettingsSupabaseDataSource @Inject constructor(
                     }
                 }
         } catch (e: Exception) {
-            throw Exception("Failed to delete all settings: ${e.message}", e)
+            throw SupabaseDataException("Failed to delete all settings: ${e.message}", e)
         }
     }
 

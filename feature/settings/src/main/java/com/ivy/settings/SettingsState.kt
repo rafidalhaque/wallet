@@ -14,5 +14,5 @@ data class SettingsState(
     val startDateOfMonth: String,
     val progressState: Boolean,
     val languageOptionVisible: Boolean,
-    val supabaseConfigured: Boolean = false
+    val supabaseConfigured: Boolean
 )
