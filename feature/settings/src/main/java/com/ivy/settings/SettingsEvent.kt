@@ -19,4 +19,12 @@ sealed interface SettingsEvent {
     data object DeleteCloudUserData : SettingsEvent
     data object DeleteAllUserData : SettingsEvent
     data object SwitchLanguage : SettingsEvent
+    
+    // Supabase configuration events
+    data class SaveSupabaseConfig(
+        val url: String,
+        val anonKey: String,
+        val tablePrefix: String
+    ) : SettingsEvent
+    data object ClearSupabaseConfig : SettingsEvent
 }

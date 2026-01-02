@@ -57,6 +57,7 @@ class SettingsViewModel @Inject constructor(
     private val updateSettingsAct: UpdateSettingsAct,
     private val settingsWriter: WriteSettingsDao,
     private val exportCsvUseCase: ExportCsvUseCase,
+    private val supabaseConfigDataStore: com.ivy.data.supabase.SupabaseConfigDataStore,
     @ApplicationContext private val context: Context
 ) : ComposeViewModel<SettingsState, SettingsEvent>() {
 
@@ -70,6 +71,7 @@ class SettingsViewModel @Inject constructor(
     private val treatTransfersAsIncomeExpense = mutableStateOf(false)
     private val startDateOfMonth = mutableIntStateOf(1)
     private val progressState = mutableStateOf(false)
+    private val supabaseConfigured = mutableStateOf(false)
 
     @Composable
     override fun uiState(): SettingsState {
@@ -88,7 +90,8 @@ class SettingsViewModel @Inject constructor(
             startDateOfMonth = getStartDateOfMonth(),
             progressState = getProgressState(),
             hideIncome = getHideIncome(),
-            languageOptionVisible = isLanguageOptionVisible()
+            languageOptionVisible = isLanguageOptionVisible(),
+            supabaseConfigured = getSupabaseConfigured()
         )
     }
 
@@ -102,6 +105,7 @@ class SettingsViewModel @Inject constructor(
         initializeHideIncome()
         initializeTransfersAsIncomeExpense()
         initializeStartDateOfMonth()
+        initializeSupabaseConfigured()
     }
 
     private suspend fun initializeCurrency() {
@@ -151,6 +155,12 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun initializeStartDateOfMonth() {
         startDateOfMonth.intValue = startDayOfMonthAct(Unit)
+    }
+
+    private suspend fun initializeSupabaseConfigured() {
+        supabaseConfigured.value = ioThread {
+            supabaseConfigDataStore.isConfigured()
+        }
     }
 
     @Composable
@@ -207,6 +217,11 @@ class SettingsViewModel @Inject constructor(
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     }
 
+    @Composable
+    private fun getSupabaseConfigured(): Boolean {
+        return supabaseConfigured.value
+    }
+
     override fun onEvent(event: SettingsEvent) {
         when (event) {
             is SettingsEvent.SetCurrency -> setCurrency(event.newCurrency)
@@ -233,6 +248,12 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.DeleteCloudUserData -> deleteCloudUserData()
             SettingsEvent.DeleteAllUserData -> deleteAllUserData()
             SettingsEvent.SwitchLanguage -> switchLanguage()
+            is SettingsEvent.SaveSupabaseConfig -> saveSupabaseConfig(
+                event.url,
+                event.anonKey,
+                event.tablePrefix
+            )
+            SettingsEvent.ClearSupabaseConfig -> clearSupabaseConfig()
         }
     }
 
@@ -403,6 +424,28 @@ class SettingsViewModel @Inject constructor(
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.data = Uri.fromParts("package", context.packageName, null)
             context.applicationContext.startActivity(intent)
+        }
+    }
+
+    private fun saveSupabaseConfig(url: String, anonKey: String, tablePrefix: String) {
+        viewModelScope.launch {
+            ioThread {
+                supabaseConfigDataStore.saveSupabaseConfig(
+                    url = url,
+                    anonKey = anonKey,
+                    tablePrefix = tablePrefix
+                )
+            }
+            supabaseConfigured.value = true
+        }
+    }
+
+    private fun clearSupabaseConfig() {
+        viewModelScope.launch {
+            ioThread {
+                supabaseConfigDataStore.clearSupabaseConfig()
+            }
+            supabaseConfigured.value = false
         }
     }
 }
