@@ -2,15 +2,13 @@ package com.ivy.data.repository
 
 import com.ivy.base.threading.DispatchersProvider
 import com.ivy.data.DataWriteEvent
-import com.ivy.data.db.dao.read.TagAssociationDao
-import com.ivy.data.db.dao.read.TagDao
-import com.ivy.data.db.dao.write.WriteTagAssociationDao
-import com.ivy.data.db.dao.write.WriteTagDao
 import com.ivy.data.model.Tag
 import com.ivy.data.model.TagAssociation
 import com.ivy.data.model.TagId
 import com.ivy.data.model.primitive.AssociationId
 import com.ivy.data.repository.mapper.TagMapper
+import com.ivy.data.supabase.datasource.TagAssociationSupabaseDataSource
+import com.ivy.data.supabase.datasource.TagSupabaseDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
@@ -21,10 +19,8 @@ import javax.inject.Singleton
 @Singleton
 class TagRepository @Inject constructor(
     private val mapper: TagMapper,
-    private val tagDao: TagDao,
-    private val tagAssociationDao: TagAssociationDao,
-    private val writeTagDao: WriteTagDao,
-    private val writeTagAssociationDao: WriteTagAssociationDao,
+    private val tagDataSource: TagSupabaseDataSource,
+    private val tagAssociationDataSource: TagAssociationSupabaseDataSource,
     private val dispatchersProvider: DispatchersProvider,
     memoFactory: RepositoryMemoFactory,
 ) {
@@ -43,14 +39,16 @@ class TagRepository @Inject constructor(
         findByIdOperation = ::findByIdOperation,
     )
 
-    private suspend fun findByIdOperation(id: TagId): Tag? = tagDao.findByIds(id.value)
+    private suspend fun findByIdOperation(id: TagId): Tag? = tagDataSource.findById(id.value)
         ?.let {
             with(mapper) { it.toDomain().getOrNull() }
         }
 
     suspend fun findByAssociatedId(id: AssociationId): List<Tag> {
         return withContext(dispatchersProvider.io) {
-            tagDao.findTagsByAssociatedId(id.value).let { entities ->
+            val associations = tagAssociationDataSource.findByAssociatedId(id.value)
+            val tagIds = associations.map { it.tagId }
+            tagDataSource.findByIds(tagIds).let { entities ->
                 entities.mapNotNull {
                     with(mapper) {
                         it.toDomain().getOrNull()
@@ -66,15 +64,17 @@ class TagRepository @Inject constructor(
         return ids.chunked(MAX_SQL_LITE_QUERY_SIZE).map {
             withContext(dispatchersProvider.io) {
                 async {
-                    tagDao.findTagsByAssociatedIds(it.map { it.value })
-                        .entries.associate { (id, tags) ->
-                            val domainTags = tags.mapNotNull {
-                                with(mapper) {
-                                    it.toDomain().getOrNull()
-                                }
+                    val associations = tagAssociationDataSource.findByAssociatedIds(it.map { it.value })
+                    val groupedAssociations = associations.groupBy { AssociationId(it.associatedId) }
+                    
+                    groupedAssociations.mapValues { (_, assocs) ->
+                        val tagIds = assocs.map { it.tagId }
+                        tagDataSource.findByIds(tagIds).mapNotNull {
+                            with(mapper) {
+                                it.toDomain().getOrNull()
                             }
-                            AssociationId(id) to domainTags
                         }
+                    }
                 }
             }
         }.awaitAll().asSequence()
@@ -84,7 +84,7 @@ class TagRepository @Inject constructor(
 
     suspend fun findAll(): List<Tag> = memo.findAll(
         findAllOperation = {
-            tagDao.findAll().let { entities ->
+            tagDataSource.findAll().let { entities ->
                 entities.mapNotNull {
                     with(mapper) { it.toDomain().getOrNull() }
                 }
@@ -97,7 +97,11 @@ class TagRepository @Inject constructor(
 
     suspend fun findByText(text: String): List<Tag> {
         return withContext(dispatchersProvider.io) {
-            tagDao.findByText(text).let { entities ->
+            // For Supabase, we'll filter in memory for now
+            // Could be optimized with a full-text search query later
+            tagDataSource.findAll().filter {
+                it.name.contains(text, ignoreCase = true)
+            }.let { entities ->
                 entities.mapNotNull {
                     with(mapper) { it.toDomain().getOrNull() }
                 }
@@ -109,19 +113,20 @@ class TagRepository @Inject constructor(
         tagIds: List<TagId>
     ): Map<TagId, List<TagAssociation>> {
         return withContext(dispatchersProvider.io) {
-            tagAssociationDao.findByAllAssociatedIdForTagId(
-                tagIds.toRawValues()
-            ).entries.associate { (id, associations) ->
-                with(mapper) {
-                    TagId(id) to associations.map { it.toDomain() }
+            val allAssociations = tagAssociationDataSource.findAll()
+            allAssociations.filter { it.tagId in tagIds.map { it.value } }
+                .groupBy { TagId(it.tagId) }
+                .mapValues { (_, assocs) ->
+                    with(mapper) {
+                        assocs.map { it.toDomain() }
+                    }
                 }
-            }
         }
     }
 
     suspend fun findByAllTagsForAssociations(): Map<AssociationId, List<TagAssociation>> {
         return withContext(dispatchersProvider.io) {
-            tagAssociationDao.findAll().groupBy {
+            tagAssociationDataSource.findAll().groupBy {
                 AssociationId(it.associatedId)
             }.mapValues {
                 with(mapper) {
@@ -133,7 +138,7 @@ class TagRepository @Inject constructor(
 
     suspend fun associateTagToEntity(associationId: AssociationId, tagId: TagId) {
         withContext(dispatchersProvider.io) {
-            writeTagAssociationDao.save(
+            tagAssociationDataSource.save(
                 with(mapper) {
                     createNewTagAssociation(tagId, associationId).toEntity()
                 }
@@ -143,25 +148,28 @@ class TagRepository @Inject constructor(
 
     suspend fun removeTagAssociation(associationId: AssociationId, tagId: TagId) {
         withContext(dispatchersProvider.io) {
-            writeTagAssociationDao.deleteId(tagId = tagId.value, associatedId = associationId.value)
+            tagAssociationDataSource.deleteByTagIdAndAssociatedId(
+                tagId = tagId.value,
+                associatedId = associationId.value
+            )
         }
     }
 
     suspend fun save(value: Tag): Unit = memo.save(value) {
-        writeTagDao.save(with(mapper) { it.toEntity() })
+        tagDataSource.save(with(mapper) { it.toEntity() })
     }
 
     suspend fun deleteById(id: TagId): Unit = memo.deleteById(
         id = id,
         deleteByIdOperation = {
-            writeTagAssociationDao.deleteAssociationsByTagId(it.value)
-            writeTagDao.deleteById(it.value)
+            tagAssociationDataSource.deleteByAssociatedId(it.value)
+            tagDataSource.deleteById(it.value)
         }
     )
 
     suspend fun deleteAll(): Unit = memo.deleteAll {
-        writeTagAssociationDao.deleteAll()
-        writeTagDao.deleteAll()
+        tagAssociationDataSource.deleteAll()
+        tagDataSource.deleteAll()
     }
 
     private fun List<TagId>.toRawValues(): List<UUID> = this.map { it.value }

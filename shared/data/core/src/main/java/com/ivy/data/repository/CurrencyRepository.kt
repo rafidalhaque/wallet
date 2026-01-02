@@ -3,10 +3,9 @@ package com.ivy.data.repository
 import android.icu.util.Currency
 import com.ivy.base.legacy.Theme
 import com.ivy.base.threading.DispatchersProvider
-import com.ivy.data.db.dao.read.SettingsDao
-import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.db.entity.SettingsEntity
 import com.ivy.data.model.primitive.AssetCode
+import com.ivy.data.supabase.datasource.SettingsSupabaseDataSource
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import java.util.UUID
@@ -15,8 +14,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CurrencyRepository @Inject constructor(
-    private val settingsDao: SettingsDao,
-    private val writeSettingsDao: WriteSettingsDao,
+    private val settingsDataSource: SettingsSupabaseDataSource,
     private val dispatchersProvider: DispatchersProvider,
 ) {
     companion object {
@@ -29,7 +27,7 @@ class CurrencyRepository @Inject constructor(
         val baseCurrency = baseCurrencyMemo
         if (baseCurrency != null) return@withContext baseCurrency
 
-        val currencyCode = settingsDao.findFirstOrNull()?.currency
+        val currencyCode = settingsDataSource.findFirst()?.currency
             ?: getDefaultFIATCurrency()?.currencyCode
         currencyCode?.let(AssetCode::from)?.getOrNull()
             ?: AssetCode.unsafe(FALLBACK_DEFAULT_CURRENCY)
@@ -41,7 +39,7 @@ class CurrencyRepository @Inject constructor(
 
     suspend fun setBaseBaseCurrency(newCurrency: AssetCode) {
         withContext(dispatchersProvider.io) {
-            val currentEntity = settingsDao.findFirstOrNull()
+            val currentEntity = settingsDataSource.findFirst()
                 ?: SettingsEntity(
                     theme = Theme.AUTO,
                     currency = FALLBACK_DEFAULT_CURRENCY,
@@ -52,7 +50,7 @@ class CurrencyRepository @Inject constructor(
                     id = UUID.randomUUID()
                 )
             baseCurrencyMemo = newCurrency
-            writeSettingsDao.save(
+            settingsDataSource.save(
                 currentEntity.copy(
                     currency = newCurrency.code
                 )

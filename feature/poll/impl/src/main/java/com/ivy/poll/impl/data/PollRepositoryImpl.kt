@@ -4,22 +4,30 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import arrow.core.Either
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.ivy.data.datastore.IvyDataStore
 import com.ivy.domain.usecase.android.DeviceId
 import com.ivy.poll.data.PollRepository
 import com.ivy.poll.data.model.PollId
 import com.ivy.poll.data.model.PollOptionId
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
+import java.time.Instant
 import javax.inject.Inject
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+
+@Serializable
+data class PollVoteEntity(
+    val deviceId: String,
+    val pollId: String,
+    val option: String,
+    val timestamp: String = Instant.now().toString()
+)
 
 class PollRepositoryImpl @Inject constructor(
-  private val dataStore: IvyDataStore
+  private val dataStore: IvyDataStore,
+  private val supabaseClient: SupabaseClient
 ) : PollRepository {
   override suspend fun hasVoted(poll: PollId): Boolean {
     return dataStore.data.map { it[votedKey(poll)] ?: false }.first()
@@ -35,29 +43,21 @@ class PollRepositoryImpl @Inject constructor(
     deviceId: DeviceId,
     poll: PollId,
     option: PollOptionId
-  ): Either<String, Unit> = suspendCoroutine { cont ->
-    // Define a reference to the document using the deviceId as its ID
-    val voteDocRef = Firebase.firestore
-      .collection("polls")
-      .document(poll.id)
-      .collection("votes")
-      .document(deviceId.value)
-
-    // Prepare the data for the vote
-    val voteData = mapOf(
-      "option" to option.value,
-      "timestamp" to FieldValue.serverTimestamp() // Good practice to store a timestamp
+  ): Either<String, Unit> = try {
+    val voteData = PollVoteEntity(
+      deviceId = deviceId.value,
+      pollId = poll.id,
+      option = option.value,
+      timestamp = Instant.now().toString()
     )
-
-    // Use .set() to create or overwrite the document with the specific ID
-    voteDocRef.set(voteData)
-      .addOnSuccessListener {
-        cont.resume(Either.Right(Unit))
-      }
-      .addOnFailureListener { e ->
-        val message = e.message ?: "null message"
-        cont.resume(Either.Left("FireStore - $message"))
-      }
+    
+    supabaseClient.from("poll_votes")
+      .upsert(voteData)
+    
+    Either.Right(Unit)
+  } catch (e: Exception) {
+    val message = e.message ?: "Unknown error"
+    Either.Left("Supabase - $message")
   }
 
   private fun votedKey(poll: PollId): Preferences.Key<Boolean> {
