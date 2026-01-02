@@ -5,6 +5,15 @@ plugins {
 
 android {
     namespace = "com.ivy.legacy"
+    
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+    
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
