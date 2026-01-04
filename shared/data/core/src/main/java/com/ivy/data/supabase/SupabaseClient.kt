@@ -1,6 +1,5 @@
 package com.ivy.data.supabase
 
-import android.content.Context
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
@@ -14,7 +13,7 @@ import io.github.jan.supabase.storage.Storage
  */
 object IvySupabaseClient {
     private var _client: SupabaseClient? = null
-    
+
     /**
      * Initialize the Supabase client with the given configuration
      * This should be called once during app initialization
@@ -30,14 +29,14 @@ object IvySupabaseClient {
             install(Storage)
         }
     }
-    
+
     /**
      * Get the initialized Supabase client
      * Throws an exception if the client has not been initialized
      */
     val client: SupabaseClient
         get() = _client ?: error("SupabaseClient not initialized. Call initialize() first.")
-    
+
     /**
      * Check if the client has been initialized
      */

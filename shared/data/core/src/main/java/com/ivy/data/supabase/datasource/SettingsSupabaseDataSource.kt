@@ -19,7 +19,6 @@ class SettingsSupabaseDataSource @Inject constructor(
     private val supabaseClient: SupabaseClient,
     private val tableNames: SupabaseTableNames
 ) {
-    
 
     suspend fun findFirst(): SettingsEntity? {
         return try {
@@ -68,6 +67,7 @@ class SettingsSupabaseDataSource @Inject constructor(
      * Get a specific preference value by key
      * This replaces DataStore functionality
      */
+    @Suppress("UnusedParameter")
     suspend fun getPreference(key: String): String? {
         // This would require a separate preferences table in Supabase
         // For now, storing as part of settings
@@ -78,6 +78,7 @@ class SettingsSupabaseDataSource @Inject constructor(
      * Set a specific preference value by key
      * This replaces DataStore functionality
      */
+    @Suppress("UnusedParameter")
     suspend fun setPreference(key: String, value: String) {
         // This would require a separate preferences table in Supabase
         // Implementation depends on how preferences are structured

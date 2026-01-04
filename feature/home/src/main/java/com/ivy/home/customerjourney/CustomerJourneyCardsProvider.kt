@@ -35,6 +35,12 @@ class CustomerJourneyCardsProvider @Inject constructor(
   private val timeProvider: TimeProvider,
 ) {
 
+  companion object {
+    private const val VOTE_EXPIRY_YEAR = 2025
+    private const val VOTE_EXPIRY_MONTH = 7
+    private const val VOTE_EXPIRY_DAY = 28
+  }
+
   suspend fun loadCards(): List<CustomerJourneyCardModel> {
     val trnCount = transactionRepository.countHappenedTransactions().value
     val plannedPaymentsCount = plannedPaymentRuleDao.countPlannedPayments()
@@ -165,7 +171,7 @@ class CustomerJourneyCardsProvider @Inject constructor(
       id = "vote_card",
       // to users that haven't voted
       condition = { trnCount, _, _, deps ->
-        val expiry = LocalDate.of(2025, 7, 28)
+        val expiry = LocalDate.of(VOTE_EXPIRY_YEAR, VOTE_EXPIRY_MONTH, VOTE_EXPIRY_DAY)
         trnCount > 3 &&
             // set expiration
             deps.timeProvider.localDateNow().isBefore(expiry) &&

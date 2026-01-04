@@ -66,7 +66,7 @@ class TagRepository @Inject constructor(
                 async {
                     val associations = tagAssociationDataSource.findByAssociatedIds(it.map { it.value })
                     val groupedAssociations = associations.groupBy { AssociationId(it.associatedId) }
-                    
+
                     groupedAssociations.mapValues { (_, assocs) ->
                         val tagIds = assocs.map { it.tagId }
                         tagDataSource.findByIds(tagIds).mapNotNull {
@@ -171,8 +171,6 @@ class TagRepository @Inject constructor(
         tagAssociationDataSource.deleteAll()
         tagDataSource.deleteAll()
     }
-
-    private fun List<TagId>.toRawValues(): List<UUID> = this.map { it.value }
 
     companion object {
         private const val MAX_SQL_LITE_QUERY_SIZE = 999

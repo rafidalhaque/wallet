@@ -1,6 +1,5 @@
 package com.ivy.data.supabase
 
-import com.ivy.data.supabase.SupabaseConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +19,7 @@ class SupabaseTableNames @Inject constructor(
      */
     private fun getTableName(baseName: String): String {
         return if (prefix.isNotEmpty()) {
-            "${prefix}${baseName}"
+            "$prefix$baseName"
         } else {
             baseName
         }

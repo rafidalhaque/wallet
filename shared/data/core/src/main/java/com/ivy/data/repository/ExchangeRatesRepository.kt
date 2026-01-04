@@ -29,9 +29,11 @@ class ExchangeRatesRepository @Inject constructor(
 
     fun findAll(): Flow<List<ExchangeRate>> = flow {
         val entities = exchangeRateDataSource.findAll()
-        emit(entities.mapNotNull {
-            with(mapper) { it.toDomain().getOrNull() }
-        })
+        emit(
+            entities.mapNotNull {
+                with(mapper) { it.toDomain().getOrNull() }
+            }
+        )
     }.flowOn(dispatchers.io)
 
     suspend fun findAllManuallyOverridden(): List<ExchangeRate> =
