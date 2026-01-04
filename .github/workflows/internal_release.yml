@@ -6,77 +6,77 @@ on:
       - main
 
 jobs:
-  google_play_release:
-    if: |
-      contains(github.event.head_commit.message, 'Automatic release')
-    runs-on: ubuntu-latest
+  # google_play_release:
+  #   if: |
+  #     contains(github.event.head_commit.message, 'Automatic release')
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout GIT
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout GIT
+  #       uses: actions/checkout@v4
 
-      - name: Verify Commit Author
-        id: verify_author
-        run: |
-          AUTHOR=$(git log -1 --pretty=format:'%an')
-          if [ "$AUTHOR" != "github-actions[bot]" ]; then
-            echo "Commit not authored by github-actions[bot], exiting."
-            exit 1
-          fi
+  #     - name: Verify Commit Author
+  #       id: verify_author
+  #       run: |
+  #         AUTHOR=$(git log -1 --pretty=format:'%an')
+  #         if [ "$AUTHOR" != "github-actions[bot]" ]; then
+  #           echo "Commit not authored by github-actions[bot], exiting."
+  #           exit 1
+  #         fi
 
-      - name: Setup Java SDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: '18'
+  #     - name: Setup Java SDK
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: 'adopt'
+  #         java-version: '18'
 
-      - name: Setup Ruby (for Fastlane)
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
+  #     - name: Setup Ruby (for Fastlane)
+  #       uses: ruby/setup-ruby@v1
+  #       with:
+  #         ruby-version: '3.2'
 
-      - name: Install Fastlane
-        run: bundle install
-      #----------------------------------------------------
+  #     - name: Install Fastlane
+  #       run: bundle install
+  #     #----------------------------------------------------
 
-      - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+  #     - name: Gradle cache
+  #       uses: gradle/actions/setup-gradle@v4
 
-      # Decode Secrets for production build
-      - name: Create JKS for prod signing
-        run: |
-          echo "$SIGNING_KEYSTORE_JKS" > sign.jks.b64
-          base64 -d -i sign.jks.b64 > sign.jks
-        env:
-          SIGNING_KEYSTORE_JKS: ${{ secrets.SIGNING_KEYSTORE }}
+  #     # Decode Secrets for production build
+  #     - name: Create JKS for prod signing
+  #       run: |
+  #         echo "$SIGNING_KEYSTORE_JKS" > sign.jks.b64
+  #         base64 -d -i sign.jks.b64 > sign.jks
+  #       env:
+  #         SIGNING_KEYSTORE_JKS: ${{ secrets.SIGNING_KEYSTORE }}
 
-      - name: Create Google Play Config file
-        run: |
-          echo "$PLAY_CONFIG_JSON" > play_config.json.b64
-          base64 -d -i play_config.json.b64 > google-play-console-user.json
-        env:
-          PLAY_CONFIG_JSON: ${{ secrets.GOOGLE_PLAY_CONSOLE_JSON }}
-      #--------------------------------------------------------------------------------
+  #     - name: Create Google Play Config file
+  #       run: |
+  #         echo "$PLAY_CONFIG_JSON" > play_config.json.b64
+  #         base64 -d -i play_config.json.b64 > google-play-console-user.json
+  #       env:
+  #         PLAY_CONFIG_JSON: ${{ secrets.GOOGLE_PLAY_CONSOLE_JSON }}
+  #     #--------------------------------------------------------------------------------
 
-      - name: Build production App Bundle
-        run: bundle exec fastlane production_build
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+  #     - name: Build production App Bundle
+  #       run: bundle exec fastlane production_build
+  #       env:
+  #         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+  #         SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+  #         SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
 
-      - name: Upload App Bundle to GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release.aab
-          path: app/build/outputs/bundle/release/app-release.aab
+  #     - name: Upload App Bundle to GitHub
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: app-release.aab
+  #         path: app/build/outputs/bundle/release/app-release.aab
 
-      - name: Release App Bundle to Google PlayStore Internal Testing
-        run: bundle exec fastlane internal_release
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+  #     - name: Release App Bundle to Google PlayStore Internal Testing
+  #       run: bundle exec fastlane internal_release
+  #       env:
+  #         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+  #         SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+  #         SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
 
   github_release:
     if: |
@@ -176,7 +176,7 @@ jobs:
           RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
           CAPTION=$'🚀 Ivy Wallet '"$RELEASE_TAG"$' release\n\nCheck it out here: '"$RELEASE_URL"'    🚢 Please, test the release candidate before we ship it.'
 
-          curl -F "chat_id=-1001647280565" \
+          curl -F "chat_id=-1001779135739" \
                -F "document=@app/build/outputs/apk/demo/app-demo.apk" \
                -F "reply_to_message_id=16118" \
                -F "caption=$CAPTION" \
