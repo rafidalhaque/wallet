@@ -22,7 +22,6 @@ import org.junit.Test
 class ExchangeRatesRepositoryTest {
     private val mapper = mockk<ExchangeRateMapper>()
     private val exchangeRatesDao = mockk<ExchangeRatesDao>()
-    private val writeExchangeRatesDao = mockk<WriteExchangeRatesDao>()
     private val remoteExchangeRatesDataSource = mockk<RemoteExchangeRatesDataSource>()
 
     private lateinit var repository: ExchangeRatesRepository
