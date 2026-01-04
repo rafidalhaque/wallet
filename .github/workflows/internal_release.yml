@@ -178,6 +178,5 @@ jobs:
 
           curl -F "chat_id=-1001779135739" \
                -F "document=@app/build/outputs/apk/demo/app-demo.apk" \
-               -F "reply_to_message_id=16118" \
                -F "caption=$CAPTION" \
                https://api.telegram.org/bot${{ secrets.BOTFATHER_TELEGRAM_BOT_TOKEN }}/sendDocument
