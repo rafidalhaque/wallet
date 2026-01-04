@@ -3,19 +3,12 @@ package com.ivy.data.supabase.datasource
 import com.ivy.data.db.entity.TagEntity
 import com.ivy.data.supabase.SupabaseDataException
 import com.ivy.data.supabase.SupabaseTableNames
-import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.SupabaseClient
-import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.from
-import com.ivy.data.supabase.SupabaseDataException
 import io.github.jan.supabase.postgrest.query.Columns
-import com.ivy.data.supabase.SupabaseDataException
 import java.util.UUID
-import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Inject
-import com.ivy.data.supabase.SupabaseDataException
 import javax.inject.Singleton
-import com.ivy.data.supabase.SupabaseDataException
 
 /**
  * Supabase data source for Tag operations
