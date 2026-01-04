@@ -50,10 +50,10 @@ class PollRepositoryImpl @Inject constructor(
       option = option.value,
       timestamp = Instant.now().toString()
     )
-    
+
     supabaseClient.from("poll_votes")
       .upsert(voteData)
-    
+
     Either.Right(Unit)
   } catch (e: Exception) {
     val message = e.message ?: "Unknown error"

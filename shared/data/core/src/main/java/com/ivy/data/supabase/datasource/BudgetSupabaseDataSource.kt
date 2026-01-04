@@ -19,7 +19,6 @@ class BudgetSupabaseDataSource @Inject constructor(
     private val supabaseClient: SupabaseClient,
     private val tableNames: SupabaseTableNames
 ) {
-    
 
     suspend fun findAll(): List<BudgetEntity> {
         return try {

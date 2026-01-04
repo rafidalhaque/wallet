@@ -19,7 +19,6 @@ class TagSupabaseDataSource @Inject constructor(
     private val supabaseClient: SupabaseClient,
     private val tableNames: SupabaseTableNames
 ) {
-    
 
     suspend fun findAll(): List<TagEntity> {
         return try {
