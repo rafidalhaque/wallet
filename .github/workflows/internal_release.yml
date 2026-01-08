@@ -106,15 +106,8 @@ jobs:
           distribution: 'adopt'
           java-version: '18'
 
-      - name: Enable Gradle Wrapper caching (optimization)
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Get version name and code from libs.versions.toml
         id: get_version
@@ -147,28 +140,18 @@ jobs:
         env:
           REPO: ${{ github.repository }}
 
-      - name: Create GitHub Release
-        id: create_github_release
-        uses: actions/create-release@v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          release_name: Release ${{ env.TAG_NAME }}
+          name: Release ${{ env.TAG_NAME }}
           body: |
             ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
-
-      - name: Upload APK to GitHub Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_github_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/demo/app-demo.apk
-          asset_name: Ivy-Wallet-${{ env.TAG_NAME }}.apk
-          asset_content_type: application/vnd.android.package-archive
+          files: |
+            app/build/outputs/apk/demo/app-demo.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Announce in Telegram group
         run: |
