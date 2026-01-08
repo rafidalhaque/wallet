@@ -1,3 +1,5 @@
+rootProject.name = "buildSrc"
+
 pluginManagement {
     repositories {
         google()

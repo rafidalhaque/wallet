@@ -12,7 +12,6 @@ import com.ivy.data.supabase.datasource.TagSupabaseDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 

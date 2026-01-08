@@ -6,8 +6,12 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  sceenshot_test:
+  screenshot_test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout GIT
