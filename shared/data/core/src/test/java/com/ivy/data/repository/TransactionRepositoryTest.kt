@@ -7,7 +7,6 @@ import com.ivy.base.TestDispatchersProvider
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.dao.fake.FakeTransactionDao
 import com.ivy.data.db.dao.read.TransactionDao
-import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.invalidTransactionEntity
 import com.ivy.data.model.AccountId

@@ -67,7 +67,7 @@ class SettingsSupabaseDataSource @Inject constructor(
      * Get a specific preference value by key
      * This replaces DataStore functionality
      */
-    @Suppress("UnusedParameter")
+    @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
     suspend fun getPreference(key: String): String? {
         // This would require a separate preferences table in Supabase
         // For now, storing as part of settings
