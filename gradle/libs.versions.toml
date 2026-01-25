@@ -18,8 +18,8 @@ supabase = "2.6.1"
 # Android
 min-sdk = "28"
 compile-sdk = "34"
-version-name = "2026.01.04"
-version-code = "209"
+version-name = "2026.01.25"
+version-code = "210"
 jvm-target = "17"
 
 
