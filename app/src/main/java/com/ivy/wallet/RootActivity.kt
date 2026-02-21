@@ -1,3 +1,5 @@
+@file:Suppress("Deprecation")
+
 package com.ivy.wallet
 
 import android.appwidget.AppWidgetManager
@@ -24,7 +26,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -55,6 +59,7 @@ import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import com.ivy.widget.transaction.AddTransactionWidget
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
@@ -348,6 +353,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         biometricPrompt.authenticate(promptInfo)
     }
 
+    @Deprecated("Use OnBackPressedDispatcher instead")
     override fun onBackPressed() {
         if (viewModel.isAppLocked()) {
             super.onBackPressed()
@@ -362,7 +368,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
     override fun openUrlInBrowser(url: String) {
         try {
             val browserIntent = Intent(Intent.ACTION_VIEW)
-            browserIntent.data = Uri.parse(url)
+            browserIntent.data = url.toUri()
             startActivity(browserIntent)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -390,12 +396,12 @@ class RootActivity : AppCompatActivity(), RootScreen {
     @Suppress("SwallowedException")
     override fun openGooglePlayAppPage(appId: String) {
         try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appId")))
-        } catch (e: ActivityNotFoundException) {
+            startActivity(Intent(Intent.ACTION_VIEW, "market://details?id=$appId".toUri()))
+        } catch (_: ActivityNotFoundException) {
             startActivity(
                 Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=$appId")
+                    "https://play.google.com/store/apps/details?id=$appId".toUri()
                 )
             )
         }
