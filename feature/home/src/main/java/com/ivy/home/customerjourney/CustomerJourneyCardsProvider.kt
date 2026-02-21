@@ -39,40 +39,7 @@ class CustomerJourneyCardsProvider @Inject constructor(
     private const val VOTE_EXPIRY_YEAR = 2025
     private const val VOTE_EXPIRY_MONTH = 7
     private const val VOTE_EXPIRY_DAY = 28
-  }
 
-  suspend fun loadCards(): List<CustomerJourneyCardModel> {
-    val trnCount = transactionRepository.countHappenedTransactions().value
-    val plannedPaymentsCount = plannedPaymentRuleDao.countPlannedPayments()
-    val deps = CustomerJourneyDeps(
-      pollRepository = pollRepository,
-      timeProvider = timeProvider,
-    )
-
-    return ACTIVE_CARDS
-      .filter {
-        it.condition(
-          trnCount,
-          plannedPaymentsCount,
-          ivyContext,
-          deps
-        ) && !isCardDismissed(it)
-      }
-  }
-
-  private fun isCardDismissed(cardData: CustomerJourneyCardModel): Boolean {
-    return sharedPrefs.getBoolean(sharedPrefsKey(cardData), false)
-  }
-
-  fun dismissCard(cardData: CustomerJourneyCardModel) {
-    sharedPrefs.putBoolean(sharedPrefsKey(cardData), true)
-  }
-
-  private fun sharedPrefsKey(cardData: CustomerJourneyCardModel): String {
-    return "${cardData.id}${SharedPrefs._CARD_DISMISSED}"
-  }
-
-  companion object {
     val ACTIVE_CARDS = listOf(
       adjustBalanceCard(),
       addPlannedPaymentCard(),
@@ -188,5 +155,36 @@ class CustomerJourneyCardsProvider @Inject constructor(
         navigation.navigateTo(PollScreen)
       }
     )
+  }
+
+  suspend fun loadCards(): List<CustomerJourneyCardModel> {
+    val trnCount = transactionRepository.countHappenedTransactions().value
+    val plannedPaymentsCount = plannedPaymentRuleDao.countPlannedPayments()
+    val deps = CustomerJourneyDeps(
+      pollRepository = pollRepository,
+      timeProvider = timeProvider,
+    )
+
+    return ACTIVE_CARDS
+      .filter {
+        it.condition(
+          trnCount,
+          plannedPaymentsCount,
+          ivyContext,
+          deps
+        ) && !isCardDismissed(it)
+      }
+  }
+
+  private fun isCardDismissed(cardData: CustomerJourneyCardModel): Boolean {
+    return sharedPrefs.getBoolean(sharedPrefsKey(cardData), false)
+  }
+
+  fun dismissCard(cardData: CustomerJourneyCardModel) {
+    sharedPrefs.putBoolean(sharedPrefsKey(cardData), true)
+  }
+
+  private fun sharedPrefsKey(cardData: CustomerJourneyCardModel): String {
+    return "${cardData.id}${SharedPrefs._CARD_DISMISSED}"
   }
 }
