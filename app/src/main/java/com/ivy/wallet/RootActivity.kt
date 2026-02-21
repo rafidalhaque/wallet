@@ -446,7 +446,9 @@ class RootActivity : AppCompatActivity(), RootScreen {
                         // reviewed or not, or even whether the review dialog was shown. Thus, no
                         // matter the result, we continue our app flow.
                         if (dismissReviewCard) {
-                            customerJourneyLogic.dismissCard(CustomerJourneyCardsProvider.rateUsCard())
+                            lifecycleScope.launch {
+                                customerJourneyLogic.dismissCard(customerJourneyLogic.rateUsCard())
+                            }
                         }
 
                         openGooglePlayAppPage(packageName)

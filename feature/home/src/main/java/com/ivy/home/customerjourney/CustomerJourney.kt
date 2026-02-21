@@ -1,3 +1,5 @@
+@file:Suppress("Deprecation")
+
 package com.ivy.home.customerjourney
 
 import androidx.compose.foundation.background
@@ -162,10 +164,21 @@ fun CustomerJourneyCard(
 
 @Preview
 @Composable
+@Suppress("Deprecation")
 private fun PreviewCard() {
     IvyPreview {
         CustomerJourneyCard(
-            cardData = CustomerJourneyCardsProvider.adjustBalanceCard(),
+            cardData = CustomerJourneyCardModel(
+                id = "adjust_balance",
+                condition = { _, _, _, _ -> true },
+                title = "Adjust initial balance",
+                description = "Make sure your account balance is correct.",
+                cta = "To Accounts",
+                ctaIcon = R.drawable.ic_custom_account_s,
+                background = com.ivy.design.l0_system.Gradient.solid(com.ivy.design.l0_system.Ivy),
+                hasDismiss = false,
+                onAction = { _, _, _ -> }
+            ),
             onCTA = { },
             onDismiss = {}
         )

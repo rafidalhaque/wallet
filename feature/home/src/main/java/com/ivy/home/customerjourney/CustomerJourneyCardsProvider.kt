@@ -1,9 +1,13 @@
+@file:Suppress("Deprecation")
+
 package com.ivy.home.customerjourney
 
-import com.ivy.base.legacy.SharedPrefs
-import com.ivy.base.legacy.stringRes
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import com.ivy.base.model.TransactionType
+import com.ivy.base.resource.ResourceProvider
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.datastore.IvyDataStore
 import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.design.l0_system.Gradient
@@ -22,17 +26,21 @@ import com.ivy.poll.data.PollRepository
 import com.ivy.poll.data.model.PollId
 import com.ivy.ui.R
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import javax.inject.Inject
 
 @Deprecated("Legacy code")
+@Suppress("Deprecation")
 class CustomerJourneyCardsProvider @Inject constructor(
   private val transactionRepository: TransactionRepository,
   private val plannedPaymentRuleDao: PlannedPaymentRuleDao,
-  private val sharedPrefs: SharedPrefs,
+  private val dataStore: IvyDataStore,
   private val ivyContext: IvyWalletCtx,
   private val pollRepository: PollRepository,
   private val timeProvider: TimeProvider,
+  private val resourceProvider: ResourceProvider,
 ) {
 
   companion object {
@@ -40,122 +48,129 @@ class CustomerJourneyCardsProvider @Inject constructor(
     private const val VOTE_EXPIRY_MONTH = 7
     private const val VOTE_EXPIRY_DAY = 28
 
-    val ACTIVE_CARDS = listOf(
-      adjustBalanceCard(),
-      addPlannedPaymentCard(),
-      didYouKnow_pinAddTransactionWidgetCard(),
-      didYouKnow_expensesPieChart(),
-      voteCard()
-    )
-
-    fun adjustBalanceCard() = CustomerJourneyCardModel(
-      id = "adjust_balance",
-      condition = { trnCount, _, _, _ ->
-        trnCount == 0L
-      },
-      title = stringRes(R.string.adjust_initial_balance),
-      description = stringRes(R.string.adjust_initial_balance_description),
-      cta = stringRes(R.string.to_accounts),
-      ctaIcon = R.drawable.ic_custom_account_s,
-      background = Gradient.solid(Ivy),
-      hasDismiss = false,
-      onAction = { _, ivyContext, _ ->
-        ivyContext.selectMainTab(MainTab.ACCOUNTS)
-      }
-    )
-
-    fun addPlannedPaymentCard() = CustomerJourneyCardModel(
-      id = "add_planned_payment",
-      condition = { trnCount, plannedPaymentCount, _, _ ->
-        trnCount >= 1 && plannedPaymentCount == 0L
-      },
-      title = stringRes(R.string.create_first_planned_payment),
-      description = stringRes(R.string.create_first_planned_payment_description),
-      cta = stringRes(R.string.add_planned_payment),
-      ctaIcon = R.drawable.ic_planned_payments,
-      background = Gradient.solid(Orange),
-      hasDismiss = true,
-      onAction = { navigation, _, _ ->
-        navigation.navigateTo(
-          EditPlannedScreen(
-            type = TransactionType.EXPENSE,
-            plannedPaymentRuleId = null
-          )
-        )
-      }
-    )
-
-    fun didYouKnow_pinAddTransactionWidgetCard() = CustomerJourneyCardModel(
-      id = "add_transaction_widget",
-      condition = { trnCount, _, _, _ ->
-        trnCount >= 3
-      },
-      title = stringRes(R.string.did_you_know),
-      description = stringRes(R.string.widget_description),
-      cta = stringRes(R.string.add_widget),
-      ctaIcon = R.drawable.ic_custom_atom_s,
-      background = Gradient.solid(GreenLight),
-      hasDismiss = true,
-      onAction = { _, _, ivyActivity ->
-        ivyActivity.pinWidget(AddTransactionWidgetCompact::class.java)
-      }
-    )
-
-    fun didYouKnow_expensesPieChart() = CustomerJourneyCardModel(
-      id = "expenses_pie_chart",
-      condition = { trnCount, _, _, _ ->
-        trnCount >= 7
-      },
-      title = stringRes(R.string.did_you_know),
-      description = stringRes(R.string.you_can_see_a_piechart),
-      cta = stringRes(R.string.expenses_piechart),
-      ctaIcon = R.drawable.ic_custom_bills_s,
-      background = Gradient.solid(Red),
-      hasDismiss = true,
-      onAction = { navigation, _, _ ->
-        navigation.navigateTo(PieChartStatisticScreen(type = TransactionType.EXPENSE))
-      }
-    )
-
-    fun rateUsCard() = CustomerJourneyCardModel(
-      id = "rate_us",
-      condition = { trnCount, _, _, _ ->
-        trnCount >= 10
-      },
-      title = stringRes(R.string.review_ivy_wallet),
-      description = stringRes(R.string.review_ivy_wallet_description),
-      cta = stringRes(R.string.rate_us_on_google_play),
-      ctaIcon = R.drawable.ic_custom_star_s,
-      background = Gradient.solid(Green),
-      hasDismiss = true,
-      onAction = { _, _, ivyActivity ->
-        ivyActivity.reviewIvyWallet(dismissReviewCard = true)
-      }
-    )
-
-    @Suppress("MaxLineLength", "NoImplicitFunctionReturnType")
-    private fun voteCard() = CustomerJourneyCardModel(
-      id = "vote_card",
-      // to users that haven't voted
-      condition = { trnCount, _, _, deps ->
-        val expiry = LocalDate.of(VOTE_EXPIRY_YEAR, VOTE_EXPIRY_MONTH, VOTE_EXPIRY_DAY)
-        trnCount > 3 &&
-            // set expiration
-            deps.timeProvider.localDateNow().isBefore(expiry) &&
-            !deps.pollRepository.hasVoted(PollId.PaidIvy)
-      },
-      title = "How much are you willing to pay for Ivy Wallet?",
-      description = "Google Play requires us to update Ivy Wallet to target API level 35 (Android 15). We'd like to know if you will be interested to pay on a subscription basis so we can maintain the app.",
-      cta = "Vote",
-      ctaIcon = R.drawable.ic_telegram_24dp,
-      hasDismiss = false,
-      background = Gradient.solid(Ivy),
-      // navigate to PollScreen
-      onAction = { navigation: Navigation, _, _ ->
-        navigation.navigateTo(PollScreen)
-      }
-    )
+    private const val CARD_DISMISSED_SUFFIX = "_cj_dismissed"
   }
+
+  fun activeCards(): List<CustomerJourneyCardModel> = listOf(
+    adjustBalanceCard(),
+    addPlannedPaymentCard(),
+    didYouKnow_pinAddTransactionWidgetCard(),
+    didYouKnow_expensesPieChart(),
+    voteCard()
+  )
+
+  @Suppress("Deprecation")
+  fun adjustBalanceCard() = CustomerJourneyCardModel(
+    id = "adjust_balance",
+    condition = { trnCount, _, _, _ ->
+      trnCount == 0L
+    },
+    title = resourceProvider.getString(R.string.adjust_initial_balance),
+    description = resourceProvider.getString(R.string.adjust_initial_balance_description),
+    cta = resourceProvider.getString(R.string.to_accounts),
+    ctaIcon = R.drawable.ic_custom_account_s,
+    background = Gradient.solid(Ivy),
+    hasDismiss = false,
+    onAction = { _, ivyCtx, _ ->
+      ivyCtx.selectMainTab(MainTab.ACCOUNTS)
+    }
+  )
+
+  @Suppress("Deprecation")
+  fun addPlannedPaymentCard() = CustomerJourneyCardModel(
+    id = "add_planned_payment",
+    condition = { trnCount, plannedPaymentCount, _, _ ->
+      trnCount >= 1 && plannedPaymentCount == 0L
+    },
+    title = resourceProvider.getString(R.string.create_first_planned_payment),
+    description = resourceProvider.getString(R.string.create_first_planned_payment_description),
+    cta = resourceProvider.getString(R.string.add_planned_payment),
+    ctaIcon = R.drawable.ic_planned_payments,
+    background = Gradient.solid(Orange),
+    hasDismiss = true,
+    onAction = { navigation, _, _ ->
+      navigation.navigateTo(
+        EditPlannedScreen(
+          type = TransactionType.EXPENSE,
+          plannedPaymentRuleId = null
+        )
+      )
+    }
+  )
+
+  @Suppress("Deprecation")
+  fun didYouKnow_pinAddTransactionWidgetCard() = CustomerJourneyCardModel(
+    id = "add_transaction_widget",
+    condition = { trnCount, _, _, _ ->
+      trnCount >= 3
+    },
+    title = resourceProvider.getString(R.string.did_you_know),
+    description = resourceProvider.getString(R.string.widget_description),
+    cta = resourceProvider.getString(R.string.add_widget),
+    ctaIcon = R.drawable.ic_custom_atom_s,
+    background = Gradient.solid(GreenLight),
+    hasDismiss = true,
+    onAction = { _, _, ivyActivity ->
+      ivyActivity.pinWidget(AddTransactionWidgetCompact::class.java)
+    }
+  )
+
+  @Suppress("Deprecation")
+  fun didYouKnow_expensesPieChart() = CustomerJourneyCardModel(
+    id = "expenses_pie_chart",
+    condition = { trnCount, _, _, _ ->
+      trnCount >= 7
+    },
+    title = resourceProvider.getString(R.string.did_you_know),
+    description = resourceProvider.getString(R.string.you_can_see_a_piechart),
+    cta = resourceProvider.getString(R.string.expenses_piechart),
+    ctaIcon = R.drawable.ic_custom_bills_s,
+    background = Gradient.solid(Red),
+    hasDismiss = true,
+    onAction = { navigation, _, _ ->
+      navigation.navigateTo(PieChartStatisticScreen(type = TransactionType.EXPENSE))
+    }
+  )
+
+  @Suppress("Deprecation")
+  fun rateUsCard() = CustomerJourneyCardModel(
+    id = "rate_us",
+    condition = { trnCount, _, _, _ ->
+      trnCount >= 10
+    },
+    title = resourceProvider.getString(R.string.review_ivy_wallet),
+    description = resourceProvider.getString(R.string.review_ivy_wallet_description),
+    cta = resourceProvider.getString(R.string.rate_us_on_google_play),
+    ctaIcon = R.drawable.ic_custom_star_s,
+    background = Gradient.solid(Green),
+    hasDismiss = true,
+    onAction = { _, _, ivyActivity ->
+      ivyActivity.reviewIvyWallet(dismissReviewCard = true)
+    }
+  )
+
+  @Suppress("MaxLineLength", "NoImplicitFunctionReturnType", "Deprecation")
+  private fun voteCard() = CustomerJourneyCardModel(
+    id = "vote_card",
+    // to users that haven't voted
+    condition = { trnCount, _, _, deps ->
+      val expiry = LocalDate.of(VOTE_EXPIRY_YEAR, VOTE_EXPIRY_MONTH, VOTE_EXPIRY_DAY)
+      trnCount > 3 &&
+          // set expiration
+          deps.timeProvider.localDateNow().isBefore(expiry) &&
+          !deps.pollRepository.hasVoted(PollId.PaidIvy)
+    },
+    title = "How much are you willing to pay for Ivy Wallet?",
+    description = "Google Play requires us to update Ivy Wallet to target API level 35 (Android 15). We'd like to know if you will be interested to pay on a subscription basis so we can maintain the app.",
+    cta = "Vote",
+    ctaIcon = R.drawable.ic_telegram_24dp,
+    hasDismiss = false,
+    background = Gradient.solid(Ivy),
+    // navigate to PollScreen
+    onAction = { navigation: Navigation, _, _ ->
+      navigation.navigateTo(PollScreen)
+    }
+  )
 
   suspend fun loadCards(): List<CustomerJourneyCardModel> {
     val trnCount = transactionRepository.countHappenedTransactions().value
@@ -165,7 +180,7 @@ class CustomerJourneyCardsProvider @Inject constructor(
       timeProvider = timeProvider,
     )
 
-    return ACTIVE_CARDS
+    return activeCards()
       .filter {
         it.condition(
           trnCount,
@@ -176,15 +191,14 @@ class CustomerJourneyCardsProvider @Inject constructor(
       }
   }
 
-  private fun isCardDismissed(cardData: CustomerJourneyCardModel): Boolean {
-    return sharedPrefs.getBoolean(sharedPrefsKey(cardData), false)
+  private suspend fun isCardDismissed(cardData: CustomerJourneyCardModel): Boolean {
+    return dataStore.data.map { it[cardDismissedKey(cardData)] ?: false }.first()
   }
 
-  fun dismissCard(cardData: CustomerJourneyCardModel) {
-    sharedPrefs.putBoolean(sharedPrefsKey(cardData), true)
+  suspend fun dismissCard(cardData: CustomerJourneyCardModel) {
+    dataStore.edit { it[cardDismissedKey(cardData)] = true }
   }
 
-  private fun sharedPrefsKey(cardData: CustomerJourneyCardModel): String {
-    return "${cardData.id}${SharedPrefs._CARD_DISMISSED}"
-  }
+  private fun cardDismissedKey(cardData: CustomerJourneyCardModel) =
+    booleanPreferencesKey("${cardData.id}$CARD_DISMISSED_SUFFIX")
 }
