@@ -1,3 +1,5 @@
+@file:Suppress("Deprecation")
+
 package com.ivy.data.repository
 
 import android.icu.util.Currency
@@ -5,7 +7,7 @@ import com.ivy.base.legacy.Theme
 import com.ivy.base.threading.DispatchersProvider
 import com.ivy.data.db.entity.SettingsEntity
 import com.ivy.data.model.primitive.AssetCode
-import com.ivy.data.supabase.datasource.SettingsSupabaseDataSource
+import com.ivy.data.supabase.datasource.ISettingsDataSource
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import java.util.UUID
@@ -14,7 +16,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CurrencyRepository @Inject constructor(
-    private val settingsDataSource: SettingsSupabaseDataSource,
+    private val settingsDataSource: ISettingsDataSource,
     private val dispatchersProvider: DispatchersProvider,
 ) {
     companion object {
@@ -38,7 +40,7 @@ class CurrencyRepository @Inject constructor(
     }
 
     suspend fun setBaseBaseCurrency(newCurrency: AssetCode) {
-        withContext(dispatchersProvider.io) {
+        withContext<Unit>(dispatchersProvider.io) {
             val currentEntity = settingsDataSource.findFirst()
                 ?: SettingsEntity(
                     theme = Theme.AUTO,

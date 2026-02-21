@@ -1,8 +1,6 @@
 package com.ivy.data.repository
 
 import com.ivy.base.TestDispatchersProvider
-import com.ivy.data.DataObserver
-import com.ivy.data.db.dao.fake.FakeSettingsDao
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.write.WriteAccountDao
 import com.ivy.data.db.entity.AccountEntity
@@ -13,6 +11,8 @@ import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
+import com.ivy.data.supabase.datasource.IAccountDataSource
+import com.ivy.data.supabase.datasource.ISettingsDataSource
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -27,23 +27,43 @@ import java.util.UUID
 class AccountRepositoryTest {
     val accountDao = mockk<AccountDao>()
     val writeAccountDao = mockk<WriteAccountDao>()
-    val writeEventBus = mockk<DataObserver>(relaxed = true)
 
     private lateinit var repository: AccountRepository
 
     @Before
     fun setup() {
-        val settingsDao = FakeSettingsDao()
+        val accountDataSource = mockk<IAccountDataSource>(relaxed = true)
+        coEvery { accountDataSource.findById(any()) } coAnswers {
+            accountDao.findById(firstArg())
+        }
+        coEvery { accountDataSource.findAll() } coAnswers {
+            accountDao.findAll(deleted = false)
+        }
+        coEvery { accountDataSource.findMaxOrderNum() } coAnswers {
+            accountDao.findMaxOrderNum()
+        }
+        coEvery { accountDataSource.save(any()) } coAnswers {
+            writeAccountDao.save(firstArg())
+        }
+        coEvery { accountDataSource.saveMany(any()) } coAnswers {
+            writeAccountDao.saveMany(firstArg())
+        }
+        coEvery { accountDataSource.deleteById(any()) } coAnswers {
+            writeAccountDao.deleteById(firstArg())
+        }
+        coEvery { accountDataSource.deleteAll() } coAnswers {
+            writeAccountDao.deleteAll()
+        }
+
+        val settingsDataSource = mockk<ISettingsDataSource>(relaxed = true)
         repository = AccountRepository(
             mapper = AccountMapper(
                 CurrencyRepository(
-                    settingsDao = settingsDao,
-                    writeSettingsDao = settingsDao,
+                    settingsDataSource = settingsDataSource,
                     dispatchersProvider = TestDispatchersProvider
                 )
             ),
-            accountDao = accountDao,
-            writeAccountDao = writeAccountDao,
+            accountDataSource = accountDataSource,
             dispatchersProvider = TestDispatchersProvider,
             memoFactory = fakeRepositoryMemoFactory(),
         )

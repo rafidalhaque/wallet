@@ -1,3 +1,5 @@
+@file:Suppress("Deprecation")
+
 package com.ivy.data.backup
 
 import android.content.Context
@@ -12,11 +14,15 @@ import com.ivy.base.di.KotlinxSerializationModule
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.data.DataObserver
 import com.ivy.data.db.IvyRoomDatabase
+import com.ivy.data.db.entity.AccountEntity
+import com.ivy.data.db.entity.SettingsEntity
 import com.ivy.data.file.FileSystem
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CurrencyRepository
 import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
+import com.ivy.data.supabase.datasource.IAccountDataSource
+import com.ivy.data.supabase.datasource.ISettingsDataSource
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import kotlinx.coroutines.runBlocking
@@ -25,6 +31,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class BackupDataUseCaseAndroidTest {
@@ -37,10 +44,26 @@ class BackupDataUseCaseAndroidTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, IvyRoomDatabase::class.java).build()
         val appContext = InstrumentationRegistry.getInstrumentation().context
+
+        val settingsDataSource = object : ISettingsDataSource {
+            override suspend fun findFirst(): SettingsEntity? = db.settingsDao.findFirstOrNull()
+            override suspend fun findAll(): List<SettingsEntity> = db.settingsDao.findAll()
+            override suspend fun save(entity: SettingsEntity) = db.writeSettingsDao.save(entity)
+            override suspend fun deleteAll() { /* no-op for tests */ }
+        }
+        val accountDataSource = object : IAccountDataSource {
+            override suspend fun findAll(): List<AccountEntity> = db.accountDao.findAll(deleted = false)
+            override suspend fun findById(id: UUID): AccountEntity? = db.accountDao.findById(id)
+            override suspend fun findMaxOrderNum(): Double? = db.accountDao.findMaxOrderNum()
+            override suspend fun save(entity: AccountEntity) = db.writeAccountDao.save(entity)
+            override suspend fun saveMany(entities: List<AccountEntity>) = db.writeAccountDao.saveMany(entities)
+            override suspend fun deleteById(id: UUID) = db.writeAccountDao.deleteById(id)
+            override suspend fun deleteAll() { /* no-op for tests */ }
+        }
+
         val accountMapper = AccountMapper(
             currencyRepository = CurrencyRepository(
-                settingsDao = db.settingsDao,
-                writeSettingsDao = db.writeSettingsDao,
+                settingsDataSource = settingsDataSource,
                 dispatchersProvider = TestDispatchersProvider,
             )
         )
@@ -57,7 +80,7 @@ class BackupDataUseCaseAndroidTest {
             sharedPrefs = SharedPrefs(appContext),
             accountRepository = AccountRepository(
                 mapper = accountMapper,
-                accountDataSource = db.accountDao,
+                accountDataSource = accountDataSource,
                 dispatchersProvider = TestDispatchersProvider,
                 memoFactory = fakeRepositoryMemoFactory(),
             ),
@@ -93,58 +116,34 @@ class BackupDataUseCaseAndroidTest {
     private suspend fun backupTestCase(version: String) {
         importBackupZipTestCase(version)
         importBackupJsonTestCase(version)
-
-        // close and re-open the db to ensure fresh data
         closeDb()
         createDb()
         exportsAndImportsTestCase(version)
     }
 
     private suspend fun importBackupZipTestCase(version: String) {
-        // given
         val backupUri = copyTestResourceToInternalStorage("backups/$version.zip")
-
-        // when
-        val res = useCase.importBackupFile(backupUri, onProgress = {})
-
-        // then
-        res.shouldBeSuccessful()
+        useCase.importBackupFile(backupUri, onProgress = {}).shouldBeSuccessful()
     }
 
     private suspend fun importBackupJsonTestCase(version: String) {
-        // given
         val backupUri = copyTestResourceToInternalStorage("backups/$version.json")
-
-        // when
-        val res = useCase.importBackupFile(backupUri, onProgress = {})
-
-        // then
-        res.shouldBeSuccessful()
+        useCase.importBackupFile(backupUri, onProgress = {}).shouldBeSuccessful()
     }
 
     private suspend fun exportsAndImportsTestCase(version: String) {
-        // given
         val backupUri = copyTestResourceToInternalStorage("backups/$version.zip")
-        // preload data
         useCase.importBackupFile(backupUri, onProgress = {}).shouldBeSuccessful()
         val exportedFileUri = tempAndroidFile("exported", ".zip").toUri()
-
-        // then
         useCase.exportToFile(exportedFileUri)
-        val reImportRes = useCase.importBackupFile(backupUri, onProgress = {})
-
-        // then
-        reImportRes.shouldBeSuccessful()
+        useCase.importBackupFile(backupUri, onProgress = {}).shouldBeSuccessful()
     }
 
     private fun copyTestResourceToInternalStorage(resPath: String): Uri {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val assetManager = context.assets
-        val inputStream = assetManager.open(resPath)
+        val inputStream = context.assets.open(resPath)
         val outputFile = tempAndroidFile("temp-backup", resPath.split(".").last())
-        outputFile.outputStream().use { fileOut ->
-            fileOut.write(inputStream.readBytes())
-        }
+        outputFile.outputStream().use { it.write(inputStream.readBytes()) }
         return Uri.fromFile(outputFile)
     }
 

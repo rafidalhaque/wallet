@@ -1,3 +1,5 @@
+@file:Suppress("SwallowedException")
+
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.AccountEntity
@@ -15,11 +17,11 @@ import javax.inject.Singleton
  * Replaces AccountDao and WriteAccountDao from Room
  */
 @Singleton
-class AccountSupabaseDataSource @Inject constructor(
+open class AccountSupabaseDataSource @Inject constructor(
     private val supabaseClient: SupabaseClient,
     private val tableNames: SupabaseTableNames
-) {
-    suspend fun findById(id: UUID): AccountEntity? {
+) : IAccountDataSource {
+    override suspend fun findById(id: UUID): AccountEntity? {
         return try {
             supabaseClient.from(tableNames.accounts)
                 .select(columns = Columns.ALL) {
@@ -33,7 +35,7 @@ class AccountSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun findAll(): List<AccountEntity> {
+    override suspend fun findAll(): List<AccountEntity> {
         return try {
             supabaseClient.from(tableNames.accounts)
                 .select(columns = Columns.ALL)
@@ -43,7 +45,7 @@ class AccountSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun findMaxOrderNum(): Double? {
+    override suspend fun findMaxOrderNum(): Double? {
         return try {
             val accounts = findAll()
             accounts.maxOfOrNull { it.orderNum }
@@ -52,7 +54,7 @@ class AccountSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun save(entity: AccountEntity) {
+    override suspend fun save(entity: AccountEntity) {
         try {
             supabaseClient.from(tableNames.accounts)
                 .upsert(entity)
@@ -61,7 +63,7 @@ class AccountSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun saveMany(entities: List<AccountEntity>) {
+    override suspend fun saveMany(entities: List<AccountEntity>) {
         try {
             supabaseClient.from(tableNames.accounts)
                 .upsert(entities)
@@ -70,7 +72,7 @@ class AccountSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun deleteById(id: UUID) {
+    override suspend fun deleteById(id: UUID) {
         try {
             supabaseClient.from(tableNames.accounts)
                 .delete {
@@ -83,7 +85,7 @@ class AccountSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun deleteAll() {
+    override suspend fun deleteAll() {
         try {
             supabaseClient.from(tableNames.accounts)
                 .delete {

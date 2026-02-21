@@ -1,3 +1,5 @@
+@file:Suppress("Deprecation", "UnusedParameter", "RedundantSuspendModifier", "UnusedPrivateMember")
+
 package com.ivy.data.supabase.datasource
 
 import com.ivy.data.db.entity.SettingsEntity
@@ -15,12 +17,12 @@ import javax.inject.Singleton
  * Also replaces DataStore preferences functionality
  */
 @Singleton
-class SettingsSupabaseDataSource @Inject constructor(
+open class SettingsSupabaseDataSource @Inject constructor(
     private val supabaseClient: SupabaseClient,
     private val tableNames: SupabaseTableNames
-) {
+) : ISettingsDataSource {
 
-    suspend fun findFirst(): SettingsEntity? {
+    override suspend fun findFirst(): SettingsEntity? {
         return try {
             supabaseClient.from(tableNames.settings)
                 .select(columns = Columns.ALL)
@@ -31,7 +33,7 @@ class SettingsSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun findAll(): List<SettingsEntity> {
+    override suspend fun findAll(): List<SettingsEntity> {
         return try {
             supabaseClient.from(tableNames.settings)
                 .select(columns = Columns.ALL)
@@ -41,7 +43,7 @@ class SettingsSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun save(entity: SettingsEntity) {
+    override suspend fun save(entity: SettingsEntity) {
         try {
             supabaseClient.from(tableNames.settings)
                 .upsert(entity)
@@ -50,7 +52,7 @@ class SettingsSupabaseDataSource @Inject constructor(
         }
     }
 
-    suspend fun deleteAll() {
+    override suspend fun deleteAll() {
         try {
             supabaseClient.from(tableNames.settings)
                 .delete {

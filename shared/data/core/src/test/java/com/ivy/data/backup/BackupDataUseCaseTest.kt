@@ -17,9 +17,12 @@ import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CurrencyRepository
 import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
+import com.ivy.data.supabase.datasource.IAccountDataSource
+import com.ivy.data.supabase.datasource.ISettingsDataSource
 import com.ivy.data.testResource
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -37,10 +40,34 @@ class BackupDataUseCaseTest {
         tagDao: FakeTagDao = FakeTagDao(),
         tagAssociationDao: FakeTagAssociationDao = FakeTagAssociationDao()
     ): BackupDataUseCase {
+        val settingsDataSource = mockk<ISettingsDataSource>(relaxed = true)
+        coEvery { settingsDataSource.findFirst() } coAnswers {
+            settingsDao.findFirstOrNull()
+        }
+        coEvery { settingsDataSource.save(any()) } coAnswers {
+            settingsDao.save(firstArg())
+        }
+
+        val accountDataSource = mockk<IAccountDataSource>(relaxed = true)
+        coEvery { accountDataSource.findAll() } coAnswers {
+            accountDao.findAll(deleted = false)
+        }
+        coEvery { accountDataSource.findById(any()) } coAnswers {
+            accountDao.findById(firstArg())
+        }
+        coEvery { accountDataSource.save(any()) } coAnswers {
+            accountDao.save(firstArg())
+        }
+        coEvery { accountDataSource.saveMany(any()) } coAnswers {
+            accountDao.saveMany(firstArg())
+        }
+        coEvery { accountDataSource.findMaxOrderNum() } coAnswers {
+            accountDao.findMaxOrderNum()
+        }
+
         val accountMapper = AccountMapper(
             CurrencyRepository(
-                settingsDao = settingsDao,
-                writeSettingsDao = settingsDao,
+                settingsDataSource = settingsDataSource,
                 dispatchersProvider = TestDispatchersProvider,
             )
         )
@@ -48,8 +75,7 @@ class BackupDataUseCaseTest {
             accountDao = accountDao,
             accountMapper = accountMapper,
             accountRepository = AccountRepository(
-                accountDao = accountDao,
-                writeAccountDao = accountDao,
+                accountDataSource = accountDataSource,
                 mapper = accountMapper,
                 dispatchersProvider = TestDispatchersProvider,
                 memoFactory = fakeRepositoryMemoFactory(),

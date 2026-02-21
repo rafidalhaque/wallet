@@ -5,7 +5,7 @@ import com.ivy.data.DataWriteEvent
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
 import com.ivy.data.repository.mapper.AccountMapper
-import com.ivy.data.supabase.datasource.AccountSupabaseDataSource
+import com.ivy.data.supabase.datasource.IAccountDataSource
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class AccountRepository @Inject constructor(
     private val mapper: AccountMapper,
-    private val accountDataSource: AccountSupabaseDataSource,
+    private val accountDataSource: IAccountDataSource,
     private val dispatchersProvider: DispatchersProvider,
     memoFactory: RepositoryMemoFactory,
 ) {
